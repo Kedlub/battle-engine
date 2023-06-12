@@ -58,12 +58,13 @@ class Game:
 
     def update(self):
         if self.shaking_ticks > 0:
-            random_position = (
-                self.original_position[0] + random.randint(-5, 5),
-                self.original_position[1] + random.randint(-5, 5)
-            )
-            self.window.position = random_position
-            self.shaking_ticks -= 1
+            if not self.fullscreen:
+                random_position = (
+                    self.original_position[0] + random.randint(-5, 5),
+                    self.original_position[1] + random.randint(-5, 5)
+                )
+                self.window.position = random_position
+                self.shaking_ticks -= 1
         else:
             if self.original_position is not None:
                 self.window.position = self.original_position
@@ -74,6 +75,12 @@ class Game:
         self.screen.fill((0, 0, 0))
         self.surface.fill((0, 0, 0))
         self.game_mode.render(self.surface)
+
+        if self.shaking_ticks > 0 and self.fullscreen:
+            offset_x = random.randint(-5, 5)
+            offset_y = random.randint(-5, 5)
+            self.surface.scroll(dx=offset_x, dy=offset_y)
+            self.shaking_ticks -= 1
 
         if self.fullscreen:
             scaled_position = ((self.native_resolution[0] - self.scaled_resolution[0]) // 2,
@@ -87,14 +94,12 @@ class Game:
         pygame.display.flip()
 
     def shake(self, ticks):
-        if self.fullscreen:
-            self.toggle_fullscreen()
         self.original_position = self.window.position
         self.shaking_ticks = ticks
 
     def toggle_fullscreen(self):
         if self.fullscreen:
-            self.screen = pygame.display.set_mode((640, 480), pygame.RESIZABLE)
+            self.screen = pygame.display.set_mode((640, 480))
         else:
             self.screen = pygame.display.set_mode(self.native_resolution, pygame.FULLSCREEN)
         self.fullscreen = not self.fullscreen
