@@ -1,5 +1,6 @@
 import pygame
 import math
+from modules.util import draw_gradient, draw_text
 
 from modules.game import GameMode
 
@@ -22,21 +23,10 @@ class TestMode(GameMode):
     def render(self, surface):
         surface.fill((0, 0, 0))
 
-        y_offset = int(self.y_offset)
-        step_size = math.floor((surface.get_height() - self.y_offset) / 15)
-        for y in range(surface.get_height() // 2, surface.get_height(), step_size):
-            color_value = int(255 * ((y - surface.get_height() // 2) / surface.get_height()))
-            pygame.draw.rect(surface, (0, color_value, color_value), (0, y + y_offset, surface.get_width(), step_size))
+        draw_gradient(surface, 15, 10, (0, 255, 255), surface.get_height() / 2 - self.y_offset)
 
-        font = pygame.font.Font(None, 36)
-        text = font.render("Hello World", True, (255, 255, 255))
-        text_rect = text.get_rect(center=(surface.get_width() // 2, surface.get_height() // 2))
-        rotated_text = pygame.transform.rotate(text, self.angle)
-        rotated_rect = rotated_text.get_rect(center=text_rect.center)
-        surface.blit(rotated_text, rotated_rect)
-        font = pygame.font.Font(None, 24)
-        step_size_text = font.render(str(step_size), True, (255, 255, 255))
-        surface.blit(step_size_text, (0, 0))
+        draw_text(surface, "Hello World!", 36, (255, 255, 255), surface.get_width() // 2, surface.get_height() // 2,
+                  centered=True, rotation=self.angle)
         pass
 
     def update(self, surface):

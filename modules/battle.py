@@ -18,3 +18,4 @@ class Battle(GameMode):
     def process_input(self, events):
         # Implement input handling in Battle mode here
         pass
+
