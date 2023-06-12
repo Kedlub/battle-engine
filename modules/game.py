@@ -59,9 +59,13 @@ class Game:
     def update(self):
         if self.shaking_ticks > 0:
             if not self.fullscreen:
+                if self.shaking_ticks <= 30:
+                    factor = self.shaking_ticks / 30
+                else:
+                    factor = 1
                 random_position = (
-                    self.original_position[0] + random.randint(-5, 5),
-                    self.original_position[1] + random.randint(-5, 5)
+                    self.original_position[0] + random.randint(int(-5 * factor), int(5 * factor)),
+                    self.original_position[1] + random.randint(int(-5 * factor), int(5 * factor))
                 )
                 self.window.position = random_position
                 self.shaking_ticks -= 1
@@ -77,8 +81,12 @@ class Game:
         self.game_mode.render(self.surface)
 
         if self.shaking_ticks > 0 and self.fullscreen:
-            offset_x = random.randint(-5, 5)
-            offset_y = random.randint(-5, 5)
+            if self.shaking_ticks <= 30:
+                factor = self.shaking_ticks / 30
+            else:
+                factor = 1
+            offset_x = random.randint(int(-5 * factor), int(5 * factor))
+            offset_y = random.randint(int(-5 * factor), int(5 * factor))
             self.surface.scroll(dx=offset_x, dy=offset_y)
             self.shaking_ticks -= 1
 
