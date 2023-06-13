@@ -117,7 +117,7 @@ class Game:
             self.process_events()
             self.update()
             self.render()
-            self.clock.tick(60)
+            self.clock.tick(30)
 
         pygame.quit()
         sys.exit()

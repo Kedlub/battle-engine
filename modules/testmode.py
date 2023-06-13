@@ -30,7 +30,7 @@ class TestMode(GameMode):
         pass
 
     def update(self, surface):
-        self.angle += 1
+        self.angle += 2
         if self.angle > 360:
             self.game.shake(50)
             self.angle = 0
