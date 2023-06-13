@@ -11,14 +11,11 @@ amplitude = (max_yOffset - min_yOffset) / 2
 
 # TestMode - A derived class from GameMode that runs a specialized game loop for a testing environment#
 class TestMode(GameMode):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, game):
+        super().__init__(game)
         self.angle = 0
         self.y_offset = 0
         self.y_reverse = False
-
-    def init(self, game):
-        self.game = game
 
     def render(self, surface):
         surface.fill((0, 0, 0))

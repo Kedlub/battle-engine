@@ -2,6 +2,7 @@ import pygame
 import sys
 import random
 from pygame._sdl2 import Window
+from modules.util import Singleton
 
 DESIGN_RESOLUTION = (640, 480)
 
@@ -9,11 +10,8 @@ DESIGN_RESOLUTION = (640, 480)
 # GameMode is an abstract class that represents the game state and processes necessary game actions such as 
 # rendering, updating, and handling input events.
 class GameMode:
-    def __init__(self):
-        self.game = None
-        pass
-
-    def init(self, game):
+    def __init__(self, game):
+        self.game = game
         pass
 
     def render(self, surface):
@@ -26,8 +24,8 @@ class GameMode:
         pass
 
 
-class Game:
-    def __init__(self, game_mode=GameMode()):
+class Game(metaclass=Singleton):
+    def __init__(self):
         pygame.init()
         screen_info = pygame.display.Info()
         self.native_resolution = (screen_info.current_w, screen_info.current_h)
@@ -42,11 +40,10 @@ class Game:
         self.clock = pygame.time.Clock()
         self.shaking_ticks = 0
         self.original_position = None
-        self.game_mode = game_mode
+        self.game_mode = GameMode(self)
         self.window = Window.from_display_module()
         self.running = True
         self.fullscreen = False
-        self.game_mode.init(self)
 
     def process_events(self):
         for event in pygame.event.get():
@@ -111,6 +108,9 @@ class Game:
         else:
             self.screen = pygame.display.set_mode(self.native_resolution, pygame.FULLSCREEN)
         self.fullscreen = not self.fullscreen
+
+    def set_mode(self, mode):
+        self.game_mode = mode
 
     def run(self):
         while self.running:
