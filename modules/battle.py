@@ -2,7 +2,7 @@ import pygame
 import enum
 from modules.game import GameMode
 from modules.player import Player
-from modules.util import resource_path, draw_gradient, draw_text
+from modules.util import resource_path, draw_gradient, draw_text, ProgressiveText
 
 
 class BattleState():
@@ -20,8 +20,14 @@ class Battle(GameMode):
         self.buttons = []
         self.state = BattleState.BUTTON_SELECT
         self.selected_button = 0
-        self.player_stats = PlayerStats(Player("Arzyk", 50, 150, 0, 30, 30, 5, []),
-                                        (35, game.surface.get_height() - 100))
+        self.player_stats = PlayerStats(Player(name="Chara"),
+                                        (40, game.surface.get_height() - 100))
+        self.battle_box = BattleBox(position=(40, game.surface.get_height() / 2), width=560, height=130)
+        battle_rect = self.battle_box.get_internal_rect()
+        self.text = ProgressiveText(
+            "Hello, I am your enemy. This is a very long sentence to test out the automatic line break that should work here.",
+            battle_rect.width - 10, "DTM-Sans", 27, battle_rect.x + 10,
+            battle_rect.y + 10, 2)
         self.add_default_buttons()
 
     def add_default_buttons(self):
@@ -61,9 +67,14 @@ class Battle(GameMode):
         for button in self.buttons:
             button.render(surface)
         self.player_stats.render(surface)
+        self.battle_box.render(surface)
+        self.text.draw(surface)
         pass
 
     def update(self, surface):
+        self.text.update()
+        if self.text.finished and self.text.target_text is not "Now prepare to die...":
+            self.text.set_text("Now prepare to die...")
         pass
 
     def select_button(self, button):
@@ -119,9 +130,9 @@ class PlayerStats(GUIElement):
 
     def render(self, surface):
         # pygame.draw.rect(surface, (0, 120, 120), (self.position[0], self.position[1], self.width, self.height))
-        draw_text(surface, self.player.name, 16, (255, 255, 255), self.position[0], self.position[1] - 5,
+        draw_text(surface, self.player.name, 15, (255, 255, 255), self.position[0], self.position[1] - 5,
                   font_name="UT-HUD")
-        draw_text(surface, f"Lv. {str(self.player.level)}", 16, (255, 255, 255), self.position[0] + 100,
+        draw_text(surface, f"Lv. {str(self.player.level)}", 15, (255, 255, 255), self.position[0] + 100,
                   self.position[1] - 5, font_name="UT-HUD")
 
         hp_bar_full = (255, 0, 0)
@@ -134,7 +145,7 @@ class PlayerStats(GUIElement):
         pygame.draw.rect(surface, hp_bar_current,
                          (base_hpbar_pos, self.position[1], self.player.health, self.height))
 
-        draw_text(surface, f"{str(self.player.health)}/{str(self.player.max_health)}", 12, (255, 255, 255),
+        draw_text(surface, f"{str(self.player.health)}/{str(self.player.max_health)}", 10, (255, 255, 255),
                   base_hpbar_pos + self.player.max_health + 10, self.position[1], font_name="UT-HUD")
 
     def update(self):
@@ -159,3 +170,64 @@ class Button(GUIElement):
     def render(self, screen):
         image = pygame.transform.rotate(self.current_texture, self.rotation)
         screen.blit(image, self.position)
+
+
+class BattleBox(GUIElement):
+    def __init__(self, position=(0, 0), width=200, height=100, rotation=0):
+        super().__init__(position, rotation)
+        self.width = width
+        self.height = height
+        self.border_thickness = 5
+        self.background_color = (0, 0, 0)
+        self.border_color = (255, 255, 255)
+
+    def render(self, surface):
+        pygame.draw.rect(surface, self.background_color, (self.position[0], self.position[1], self.width, self.height))
+        pygame.draw.rect(surface, self.border_color, (self.position[0], self.position[1], self.width, self.height),
+                         self.border_thickness)
+
+    def update(self):
+        pass
+
+    def get_internal_rect(self):
+        return pygame.Rect(self.position[0] + self.border_thickness, self.position[1] + self.border_thickness,
+                           self.width - 2 * self.border_thickness, self.height - 2 * self.border_thickness)
+
+
+class MenuItem:
+    def __init__(self, text, action=None, params=None, submenu=None):
+        self.text = text
+        self.action = action
+        self.params = params
+        self.submenu = submenu
+
+    def execute(self):
+        if self.action is not None and self.params is not None:
+            self.action(*self.params)
+        elif self.submenu is not None:
+            self.submenu.display()
+
+
+class Menu:
+    def __init__(self, title, items=None, parent_menu=None):
+        self.title = title
+        self.items = items if items is not None else []
+        self.parent_menu = parent_menu
+
+    def add_item(self, item):
+        self.items.append(item)
+
+    def display(self):
+        print(self.title)
+        for i, item in enumerate(self.items):
+            print(f"{i + 1}. {item.text}")
+
+        choice = int(input("Choose an option: ")) - 1
+
+        if 0 <= choice < len(self.items):
+            self.items[choice].execute()
+        else:
+            print("Invalid option")
+
+        if self.parent_menu is not None:
+            self.parent_menu.display()

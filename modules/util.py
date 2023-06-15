@@ -13,27 +13,68 @@ class Singleton(type):
 
 
 class ProgressiveText:
-    def __init__(self, target_text, max_width, font_name, font_size, x, y):
+    def __init__(self, target_text, max_width, font_name, font_size, x, y, tick_length):
         self.target_text = target_text
         self.current_text = ""
         self.max_width = max_width
         self.font_name = font_name
         self.font_size = font_size
+        self.lines = []
         self.x = x
         self.y = y
         self.color = (255, 255, 255)
+        self.tick_length = tick_length
+        self.tick = 0
+        self.finished = False
 
     def update(self):
         if len(self.current_text) < len(self.target_text):
-            self.current_text += self.target_text[len(self.current_text)]
+            self.finished = False
+            self.tick += 1
+            if self.tick >= self.tick_length:
+                self.current_text += self.target_text[len(self.current_text)]
+                self.tick = 0
+                self.lines = self.split_text(self.current_text)
+        elif not self.finished:
+            self.finished = True
+
+    def split_text(self, text):
+        words = text.split()
+        lines = []
+        current_line = ""
+
+        for word in words:
+            if current_line:
+                test_line = current_line + " " + word
+            else:
+                test_line = word
+
+            line_width, _ = draw_text_size(test_line, self.font_size, font_name=self.font_name)
+
+            if line_width > self.max_width:
+                lines.append(current_line)
+                current_line = word
+            else:
+                if current_line:
+                    current_line += " " + word
+                else:
+                    current_line = word
+
+        if current_line:
+            lines.append(current_line)
+
+        return lines
 
     def draw(self, surface):
-        lines = [self.current_text[i:i + self.max_width] for i in range(0, len(self.current_text), self.max_width)]
-        for index, line in enumerate(lines):
+        for index, line in enumerate(self.lines):
             draw_text(surface, line, self.font_size, self.color, self.x, self.y + index * self.font_size)
 
     def skip(self):
         self.current_text = self.target_text
+
+    def set_text(self, text):
+        self.target_text = text
+        self.current_text = ""
 
 
 def resource_path(relative_path):
@@ -88,3 +129,10 @@ def draw_text(surface, text, size, color, x, y, anchor="topleft", rotation: int 
         surface.blit(rotated_text, rotated_rect)
     else:
         surface.blit(text_surface, text_rect)
+
+
+def draw_text_size(text, size, font_name="DTM-Sans"):
+    font = pygame.font.Font(font_dictionary[font_name], size)
+    text_surface = font.render(text, True, (0, 0, 0))
+    text_rect = text_surface.get_rect()
+    return text_rect.width, text_rect.height
