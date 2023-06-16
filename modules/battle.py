@@ -2,7 +2,7 @@ import pygame
 import enum
 from modules.game import GameMode
 from modules.player import Player
-from modules.util import resource_path, draw_gradient, draw_text, ProgressiveText
+from modules.util import resource_path, draw_gradient, draw_text, ProgressiveText, Singleton
 
 
 class BattleState():
@@ -22,6 +22,7 @@ class Battle(GameMode):
         self.selected_button = 0
         self.player_stats = PlayerStats(Player(name="Chara"),
                                         (40, game.surface.get_height() - 100))
+        self.player_object = PlayerObject(50, 50, (255, 0, 0))
         self.battle_box = BattleBox(position=(40, game.surface.get_height() / 2), width=560, height=130)
         battle_rect = self.battle_box.get_internal_rect()
         self.text = ProgressiveText(
@@ -69,11 +70,13 @@ class Battle(GameMode):
         self.player_stats.render(surface)
         self.battle_box.render(surface)
         self.text.draw(surface)
+        self.player_object.render(surface)
         pass
 
     def update(self, surface):
         self.text.update()
-        if self.text.finished and self.text.target_text is not "Now prepare to die...":
+        self.player_object.update()
+        if self.text.finished and self.text.target_text != "Now prepare to die...":
             self.text.set_text("Now prepare to die...")
         pass
 
@@ -92,9 +95,81 @@ class Battle(GameMode):
                     elif event.key == pygame.K_RIGHT:
                         self.select_button(self.selected_button + 1)
                 pass
+            case BattleState.DEFENDING:
+                self.player_object.process_input(event)
+                pass
             case _:
                 pass
         pass
+
+
+class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
+    def __init__(self, x=0, y=0, color=(255, 0, 0)):
+        super().__init__()
+        self.image = pygame.image.load(resource_path("assets/battle/soul/soul.png"))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.rotation = 0
+        self.speed = 5
+        self.keys_pressed = {
+            pygame.K_UP: False,
+            pygame.K_LEFT: False,
+            pygame.K_DOWN: False,
+            pygame.K_RIGHT: False,
+            pygame.K_q: False,
+            pygame.K_e: False,
+        }
+        self.set_color(color)
+
+    def set_color(self, color):
+        new_surface = pygame.Surface(self.image.get_size())
+        new_surface.fill(color)
+        new_surface.set_colorkey((0, 0, 0))
+        new_surface.set_alpha(self.image.get_alpha())
+        new_surface.blit(self.image, (0, 0), None, pygame.BLEND_RGBA_MULT)
+        self.image = new_surface.convert_alpha()
+
+    def set_position(self, x, y):
+        self.rect.x = x
+        self.rect.y = y
+
+    def set_rotation(self, angle):
+        self.rotation = angle
+
+    def move(self, dx, dy):
+        self.rect.x += dx * self.speed
+        self.rect.y += dy * self.speed
+
+    def rotate(self, angle):
+        self.rotation += angle
+
+    def update(self):
+        if self.keys_pressed[pygame.K_UP]:
+            self.move(0, -1)
+        if self.keys_pressed[pygame.K_LEFT]:
+            self.move(-1, 0)
+        if self.keys_pressed[pygame.K_DOWN]:
+            self.move(0, 1)
+        if self.keys_pressed[pygame.K_RIGHT]:
+            self.move(1, 0)
+        if self.keys_pressed[pygame.K_q]:
+            self.rotate(-5)
+        if self.keys_pressed[pygame.K_e]:
+            self.rotate(5)
+
+    def render(self, surface):
+        rotated = pygame.transform.rotate(self.image, self.rotation)
+        rotated_rect = rotated.get_rect(center=self.rect.center)
+        surface.blit(rotated, rotated_rect)
+
+    def process_input(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key in self.keys_pressed:
+                self.keys_pressed[event.key] = True
+        elif event.type == pygame.KEYUP:
+            if event.key in self.keys_pressed:
+                self.keys_pressed[event.key] = False
 
 
 class GUIElement:
@@ -159,10 +234,13 @@ class Button(GUIElement):
         super().__init__(position, rotation)
         self.inactive_texture = pygame.image.load(resource_path(inactive_texture))
         self.active_texture = pygame.image.load(resource_path(active_texture))
+        self.height = self.active_texture.get_height()
         self.current_texture = self.inactive_texture
 
     def set_active(self, active):
         if active:
+            player_object = PlayerObject()
+            player_object.set_position(self.position[0] + 10, self.position[1] + self.height / 2 - 8)
             self.current_texture = self.active_texture
         else:
             self.current_texture = self.inactive_texture
