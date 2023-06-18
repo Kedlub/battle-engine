@@ -1,6 +1,8 @@
 import pygame
 import enum
-from modules.game import GameMode
+
+from modules.constants import CONFIRM_BUTTON
+from modules.game import GameMode, Game
 from modules.player import Player
 from modules.util import resource_path, draw_gradient, draw_text, ProgressiveText, Singleton
 
@@ -14,10 +16,12 @@ class BattleState():
 
 
 class Battle(GameMode):
-    def __init__(self, game):
+    def __init__(self, game=Game()):
         super().__init__(game)
         self.button_data = []
         self.buttons = []
+        self.rounds = []
+        self.enemies = []
         self.state = BattleState.BUTTON_SELECT
         self.selected_button = 0
         self.player_stats = PlayerStats(Player(name="Chara"),
@@ -67,6 +71,8 @@ class Battle(GameMode):
         draw_gradient(surface, 25, 6, (255, 255, 255), surface.get_height() / 2)
         for button in self.buttons:
             button.render(surface)
+        for enemy in self.enemies:
+            enemy.render(surface)
         self.player_stats.render(surface)
         self.battle_box.render(surface)
         self.text.draw(surface)
@@ -94,12 +100,59 @@ class Battle(GameMode):
                         self.select_button(self.selected_button - 1)
                     elif event.key == pygame.K_RIGHT:
                         self.select_button(self.selected_button + 1)
+                    elif event.key == CONFIRM_BUTTON:
+                        # confirm the selection
+                        pass
                 pass
             case BattleState.DEFENDING:
                 self.player_object.process_input(event)
                 pass
             case _:
                 pass
+        pass
+
+
+class CustomBattle:
+    def __init__(self):
+        self.enemies = []
+        self.rounds = []
+        self.generic_rounds = []
+
+    def render(self, surface):
+        pass
+
+    def update(self, surface):
+        pass
+
+    def process_input(self, event):
+        pass
+
+
+class Enemy:
+    def __init__(self, sprite, name="TestMon", position=(0, 0), rotation=0, health=20):
+        self.sprite = sprite
+        self.position = position
+        self.rotation = rotation
+        self.health = health
+        self.name = name
+        self.acts = []
+
+    def add_act(self, name, func):
+        self.acts.append({name: func})
+
+    def update(self, surface):
+        pass
+
+    def render(self, surface):
+        # Base implementation of render using only one sprite, enemies don't have to use this one sprite,
+        # it can instead use different sprites for different body part
+        surface.blit(pygame.transform.rotate(self.sprite, self.rotation), self.position)
+        pass
+
+    def process_input(self, event):
+        pass
+
+    def check(self):
         pass
 
 

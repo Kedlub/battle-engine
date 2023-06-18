@@ -1,4 +1,7 @@
-class Player:
+from modules.util import Singleton
+
+
+class Player(metaclass=Singleton):
     def __init__(self, name="Chara", health=20, max_health=20, attack=5, defense=5, level=1, items=[]):
         self.name = name
         self.health = health

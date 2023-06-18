@@ -44,6 +44,7 @@ class Game(metaclass=Singleton):
         self.window = Window.from_display_module()
         self.running = True
         self.fullscreen = False
+        self.progressive_texts = []
 
     def process_events(self):
         for event in pygame.event.get():
@@ -70,6 +71,8 @@ class Game(metaclass=Singleton):
             if self.original_position is not None:
                 self.window.position = self.original_position
                 self.original_position = None
+        for text in self.progressive_texts:
+            text.update()
         self.game_mode.update(self.surface)
 
     def render(self):

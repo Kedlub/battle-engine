@@ -107,6 +107,8 @@ font_dictionary = {
     "UT-HUD": resource_path("assets/fonts/undertale-in-game-hud-font.ttf")
 }
 
+def register_font(font_name, font_path):
+    font_dictionary[font_name] = resource_path(font_path)
 
 def draw_text(surface, text, size, color, x, y, anchor="topleft", rotation: int = 0, font_name="DTM-Sans"):
     font = pygame.font.Font(font_dictionary[font_name], size)
