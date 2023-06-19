@@ -24,10 +24,10 @@ class Battle(GameMode):
         self.enemies = []
         self.state = BattleState.BUTTON_SELECT
         self.selected_button = 0
-        self.player_stats = PlayerStats(Player(name="Chara"),
-                                        (40, game.surface.get_height() - 100))
+        self.player_stats = PlayerStats(Player(name="Chara", level=19, health=90, max_health=92),
+                                        (40, game.surface.get_height() - 80))
         self.player_object = PlayerObject(50, 50, (255, 0, 0))
-        self.battle_box = BattleBox(position=(40, game.surface.get_height() / 2), width=560, height=130)
+        self.battle_box = BattleBox(position=(33, game.surface.get_height() / 2 + 9), width=575, height=140)
         battle_rect = self.battle_box.get_internal_rect()
         self.text = ProgressiveText(
             "Hello, I am your enemy. This is a very long sentence to test out the automatic line break that should work here.",
@@ -57,7 +57,7 @@ class Battle(GameMode):
 
         for i, data in enumerate(self.button_data):
             position_x = button_spacing + (Button.default_width + button_spacing) * i
-            position_y = screen_height - 60
+            position_y = screen_height - 47
             position = (position_x, position_y)
             self.buttons.append(Button(data["inactive"], data["active"], position))
 
@@ -100,8 +100,9 @@ class Battle(GameMode):
                         self.select_button(self.selected_button - 1)
                     elif event.key == pygame.K_RIGHT:
                         self.select_button(self.selected_button + 1)
-                    elif event.key == CONFIRM_BUTTON:
+                    elif event.key in CONFIRM_BUTTON:
                         # confirm the selection
+                        print("confirmed")
                         pass
                 pass
             case BattleState.DEFENDING:
@@ -112,28 +113,13 @@ class Battle(GameMode):
         pass
 
 
-class CustomBattle:
-    def __init__(self):
-        self.enemies = []
-        self.rounds = []
-        self.generic_rounds = []
-
-    def render(self, surface):
-        pass
-
-    def update(self, surface):
-        pass
-
-    def process_input(self, event):
-        pass
-
-
 class Enemy:
     def __init__(self, sprite, name="TestMon", position=(0, 0), rotation=0, health=20):
         self.sprite = sprite
         self.position = position
         self.rotation = rotation
         self.health = health
+        self.max_health = health
         self.name = name
         self.acts = []
 
@@ -254,27 +240,32 @@ class PlayerStats(GUIElement):
         super().__init__(position)
         self.player = player
         self.width = 570
-        self.height = 25
+        self.height = 21
+        self.hp_sprite = pygame.image.load('assets/battle/hp.png')
+        self.karma_sprite = pygame.image.load('assets/battle/karma.png')
 
     def render(self, surface):
+        y_offset = 6
         # pygame.draw.rect(surface, (0, 120, 120), (self.position[0], self.position[1], self.width, self.height))
-        draw_text(surface, self.player.name, 15, (255, 255, 255), self.position[0], self.position[1] - 5,
+        draw_text(surface, self.player.name, 15, (255, 255, 255), self.position[0], self.position[1] - y_offset,
                   font_name="UT-HUD")
-        draw_text(surface, f"Lv. {str(self.player.level)}", 15, (255, 255, 255), self.position[0] + 100,
-                  self.position[1] - 5, font_name="UT-HUD")
+        draw_text(surface, f"LV {str(self.player.level)}", 15, (255, 255, 255), self.position[0] + 100,
+                  self.position[1] - y_offset, font_name="UT-HUD")
 
-        hp_bar_full = (255, 0, 0)
+        hp_bar_full = (192, 0, 0)
         hp_bar_current = (255, 255, 0)
 
         base_hpbar_pos = self.position[0] + 250
+
+        surface.blit(self.hp_sprite, (base_hpbar_pos - self.hp_sprite.get_width() - 10, self.position[1] + 5))
 
         pygame.draw.rect(surface, hp_bar_full,
                          (base_hpbar_pos, self.position[1], self.player.max_health, self.height))
         pygame.draw.rect(surface, hp_bar_current,
                          (base_hpbar_pos, self.position[1], self.player.health, self.height))
 
-        draw_text(surface, f"{str(self.player.health)}/{str(self.player.max_health)}", 10, (255, 255, 255),
-                  base_hpbar_pos + self.player.max_health + 10, self.position[1], font_name="UT-HUD")
+        draw_text(surface, f"{str(self.player.health)} / {str(self.player.max_health)}", 15, (255, 255, 255),
+                  base_hpbar_pos + self.player.max_health + 10, self.position[1] - y_offset, font_name="UT-HUD")
 
     def update(self):
         pass
