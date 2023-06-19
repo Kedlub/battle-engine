@@ -30,8 +30,8 @@ class Battle(GameMode):
         self.battle_box = BattleBox(position=(33, game.surface.get_height() / 2 + 9), width=575, height=140)
         battle_rect = self.battle_box.get_internal_rect()
         self.text = ProgressiveText(
-            "Hello, I am your enemy. This is a very long sentence to test out the automatic line break that should work here.",
-            battle_rect.width - 10, "DTM-Sans", 27, battle_rect.x + 10,
+            "[instant]Example text [color:ff0000] in red with different font [font:default][color:00aaaa][charspacing:5]and spacing displayed instantly",
+            battle_rect.width - 10, "default", 27, battle_rect.x + 10,
             battle_rect.y + 10, 2)
         self.add_default_buttons()
 
@@ -82,8 +82,8 @@ class Battle(GameMode):
     def update(self, surface):
         self.text.update()
         self.player_object.update()
-        if self.text.finished and self.text.target_text != "Now prepare to die...":
-            self.text.set_text("Now prepare to die...")
+        # if self.text.finished and self.text.target_text != "Now prepare to die...":
+        #     self.text.set_text("Now prepare to die...")
         pass
 
     def select_button(self, button):
@@ -236,9 +236,9 @@ class PlayerStats(GUIElement):
         y_offset = 6
         # pygame.draw.rect(surface, (0, 120, 120), (self.position[0], self.position[1], self.width, self.height))
         draw_text(surface, self.player.name, 15, (255, 255, 255), self.position[0], self.position[1] - y_offset,
-                  font_name="UT-HUD")
+                  font_name="hud")
         draw_text(surface, f"LV {str(self.player.level)}", 15, (255, 255, 255), self.position[0] + 100,
-                  self.position[1] - y_offset, font_name="UT-HUD")
+                  self.position[1] - y_offset, font_name="hud")
 
         hp_bar_full = (192, 0, 0)
         hp_bar_current = (255, 255, 0)
@@ -253,7 +253,7 @@ class PlayerStats(GUIElement):
                          (base_hpbar_pos, self.position[1], self.player.health, self.height))
 
         draw_text(surface, f"{str(self.player.health)} / {str(self.player.max_health)}", 15, (255, 255, 255),
-                  base_hpbar_pos + self.player.max_health + 10, self.position[1] - y_offset, font_name="UT-HUD")
+                  base_hpbar_pos + self.player.max_health + 10, self.position[1] - y_offset, font_name="hud")
 
     def update(self):
         pass
@@ -290,6 +290,7 @@ class BattleBox(GUIElement):
         self.border_thickness = 5
         self.background_color = (0, 0, 0)
         self.border_color = (255, 255, 255)
+        self.text = None
 
     def render(self, surface):
         pygame.draw.rect(surface, self.background_color, (self.position[0], self.position[1], self.width, self.height))
