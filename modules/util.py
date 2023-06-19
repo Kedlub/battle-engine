@@ -138,6 +138,9 @@ class ProgressiveText:
 
         self.target_command_positions, self.target_text_clean = self.preprocess_target_text(self.target_text)
 
+        if self.instant_command:
+            self.current_text = self.target_text_clean
+
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
