@@ -107,11 +107,22 @@ font_dictionary = {
     "UT-HUD": resource_path("assets/fonts/undertale-in-game-hud-font.ttf")
 }
 
+font_cache = {}
+
+
 def register_font(font_name, font_path):
     font_dictionary[font_name] = resource_path(font_path)
 
+
+def load_font(name, size):
+    font_cache_key = f"{name}_{size}"
+    if font_cache_key not in font_cache:
+        font_cache[font_cache_key] = pygame.font.Font(name, size)
+    return font_cache[font_cache_key]
+
+
 def draw_text(surface, text, size, color, x, y, anchor="topleft", rotation: int = 0, font_name="DTM-Sans"):
-    font = pygame.font.Font(font_dictionary[font_name], size)
+    font = load_font(font_dictionary[font_name], size)
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect()
     match anchor:
