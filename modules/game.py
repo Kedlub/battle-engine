@@ -45,8 +45,10 @@ class Game(metaclass=Singleton):
         self.running = True
         self.fullscreen = False
         self.progressive_texts = []
+        self.keys_pressed = []
 
     def process_events(self):
+        self.keys_pressed = pygame.key.get_pressed()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False

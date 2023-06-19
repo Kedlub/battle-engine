@@ -106,7 +106,6 @@ class Battle(GameMode):
                         pass
                 pass
             case BattleState.DEFENDING:
-                self.player_object.process_input(event)
                 pass
             case _:
                 pass
@@ -151,14 +150,7 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
         self.rect.y = y
         self.rotation = 0
         self.speed = 5
-        self.keys_pressed = {
-            pygame.K_UP: False,
-            pygame.K_LEFT: False,
-            pygame.K_DOWN: False,
-            pygame.K_RIGHT: False,
-            pygame.K_q: False,
-            pygame.K_e: False,
-        }
+        self.game = Game()
         self.set_color(color)
 
     def set_color(self, color):
@@ -184,18 +176,19 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
         self.rotation += angle
 
     def update(self):
-        if self.keys_pressed[pygame.K_UP]:
-            self.move(0, -1)
-        if self.keys_pressed[pygame.K_LEFT]:
-            self.move(-1, 0)
-        if self.keys_pressed[pygame.K_DOWN]:
-            self.move(0, 1)
-        if self.keys_pressed[pygame.K_RIGHT]:
-            self.move(1, 0)
-        if self.keys_pressed[pygame.K_q]:
-            self.rotate(-5)
-        if self.keys_pressed[pygame.K_e]:
-            self.rotate(5)
+        if self.game.game_mode.state == BattleState.DEFENDING:
+            if self.game.keys_pressed[pygame.K_UP]:
+                self.move(0, -1)
+            if self.game.keys_pressed[pygame.K_LEFT]:
+                self.move(-1, 0)
+            if self.game.keys_pressed[pygame.K_DOWN]:
+                self.move(0, 1)
+            if self.game.keys_pressed[pygame.K_RIGHT]:
+                self.move(1, 0)
+            if self.game.keys_pressed[pygame.K_q]:
+                self.rotate(-5)
+            if self.game.keys_pressed[pygame.K_e]:
+                self.rotate(5)
 
     def render(self, surface):
         rotated = pygame.transform.rotate(self.image, self.rotation)
@@ -203,12 +196,7 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
         surface.blit(rotated, rotated_rect)
 
     def process_input(self, event):
-        if event.type == pygame.KEYDOWN:
-            if event.key in self.keys_pressed:
-                self.keys_pressed[event.key] = True
-        elif event.type == pygame.KEYUP:
-            if event.key in self.keys_pressed:
-                self.keys_pressed[event.key] = False
+        pass
 
 
 class GUIElement:
