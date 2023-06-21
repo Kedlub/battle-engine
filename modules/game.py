@@ -2,7 +2,7 @@ import pygame
 import sys
 import random
 from pygame._sdl2 import Window
-from modules.util import Singleton
+from modules.util import Singleton, InterpolationManager
 
 DESIGN_RESOLUTION = (640, 480)
 
@@ -42,10 +42,12 @@ class Game(metaclass=Singleton):
         self.original_position = None
         self.game_mode = GameMode(self)
         self.window = Window.from_display_module()
+        self.interpolation_manager = InterpolationManager()
         self.running = True
         self.fullscreen = False
         self.progressive_texts = []
         self.keys_pressed = []
+        self.delta_time = 0
 
     def process_events(self):
         self.keys_pressed = pygame.key.get_pressed()
@@ -75,6 +77,7 @@ class Game(metaclass=Singleton):
                 self.original_position = None
         for text in self.progressive_texts:
             text.update()
+        self.interpolation_manager.update(self.delta_time)
         self.game_mode.update(self.surface)
 
     def render(self):
@@ -122,7 +125,7 @@ class Game(metaclass=Singleton):
             self.process_events()
             self.update()
             self.render()
-            self.clock.tick(30)
+            self.delta_time = self.clock.tick(30)
 
         pygame.quit()
         sys.exit()

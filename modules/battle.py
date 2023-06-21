@@ -2,10 +2,11 @@ import pygame
 import enum
 import random
 
-from modules.constants import CONFIRM_BUTTON, DISMISS_BUTTON
+from modules.constants import CONFIRM_BUTTON, DISMISS_BUTTON, WIDTH
 from modules.game import GameMode, Game
 from modules.player import Player
-from modules.util import resource_path, draw_gradient, draw_text, ProgressiveText, Singleton, draw_text_size
+from modules.util import resource_path, draw_gradient, draw_text, ProgressiveText, Singleton, draw_text_size, \
+    InterpolationManager, Interpolation
 
 
 class BattleState():
@@ -81,6 +82,9 @@ class Battle(GameMode):
         pass
 
     def update(self, surface):
+        if self.state is BattleState.BUTTON_SELECT:
+            for button in self.buttons:
+                button.move_player()
         self.player_object.update()
         self.battle_box.update()
 
@@ -221,17 +225,17 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
 
 class GUIElement:
     def __init__(self, position=(0, 0), rotation=0):
-        self.position = position
+        self.x, self.y = position
         self.rotation = rotation
 
     def set_position(self, x, y):
-        self.position = (x, y)
+        self.x, self.y = (x, y)
 
     def set_rotation(self, rotation):
         self.rotation = rotation
 
     def interpolate(self, target_position, target_rotation, t):
-        x1, y1 = self.position
+        x1, y1 = self.x, self.y
         x2, y2 = target_position
         self.set_position(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t)
         self.set_rotation(self.rotation + (target_rotation - self.rotation) * t)
@@ -254,26 +258,26 @@ class PlayerStats(GUIElement):
 
     def render(self, surface):
         y_offset = 6
-        # pygame.draw.rect(surface, (0, 120, 120), (self.position[0], self.position[1], self.width, self.height))
-        draw_text(surface, self.player.name, 15, (255, 255, 255), self.position[0], self.position[1] - y_offset,
+        # pygame.draw.rect(surface, (0, 120, 120), (self.x, self.y, self.width, self.height))
+        draw_text(surface, self.player.name, 15, (255, 255, 255), self.x, self.y - y_offset,
                   font_name="hud")
-        draw_text(surface, f"LV {str(self.player.level)}", 15, (255, 255, 255), self.position[0] + 100,
-                  self.position[1] - y_offset, font_name="hud")
+        draw_text(surface, f"LV {str(self.player.level)}", 15, (255, 255, 255), self.x + 100,
+                  self.y - y_offset, font_name="hud")
 
         hp_bar_full = (192, 0, 0)
         hp_bar_current = (255, 255, 0)
 
-        base_hpbar_pos = self.position[0] + 250
+        base_hpbar_pos = self.x + 250
 
-        surface.blit(self.hp_sprite, (base_hpbar_pos - self.hp_sprite.get_width() - 10, self.position[1] + 5))
+        surface.blit(self.hp_sprite, (base_hpbar_pos - self.hp_sprite.get_width() - 10, self.y + 5))
 
         pygame.draw.rect(surface, hp_bar_full,
-                         (base_hpbar_pos, self.position[1], self.player.max_health, self.height))
+                         (base_hpbar_pos, self.y, self.player.max_health, self.height))
         pygame.draw.rect(surface, hp_bar_current,
-                         (base_hpbar_pos, self.position[1], self.player.health, self.height))
+                         (base_hpbar_pos, self.y, self.player.health, self.height))
 
         draw_text(surface, f"{str(self.player.health)} / {str(self.player.max_health)}", 15, (255, 255, 255),
-                  base_hpbar_pos + self.player.max_health + 10, self.position[1] - y_offset, font_name="hud")
+                  base_hpbar_pos + self.player.max_health + 10, self.y - y_offset, font_name="hud")
 
     def update(self):
         pass
@@ -291,15 +295,21 @@ class Button(GUIElement):
 
     def set_active(self, active):
         if active:
-            player_object = PlayerObject()
-            player_object.set_position(self.position[0] + 10, self.position[1] + self.height / 2 - 8)
             self.current_texture = self.active_texture
         else:
             self.current_texture = self.inactive_texture
 
+    def update(self):
+        pass
+
+    def move_player(self):
+        if self.current_texture == self.active_texture:
+            player_object = PlayerObject()
+            player_object.set_position(self.x + 10, self.y + self.height / 2 - 8)
+
     def render(self, screen):
         image = pygame.transform.rotate(self.current_texture, self.rotation)
-        screen.blit(image, self.position)
+        screen.blit(image, (self.x, self.y))
 
 
 class BattleBox(GUIElement):
@@ -319,16 +329,20 @@ class BattleBox(GUIElement):
         self.text.draw(surface)
 
     def render(self, surface):
-        pygame.draw.rect(surface, self.background_color, (self.position[0], self.position[1], self.width, self.height))
-        pygame.draw.rect(surface, self.border_color, (self.position[0], self.position[1], self.width, self.height),
+        pygame.draw.rect(surface, self.background_color, (self.x, self.y, self.width, self.height))
+        pygame.draw.rect(surface, self.border_color, (self.x, self.y, self.width, self.height),
                          self.border_thickness)
 
     def update(self):
+        rect = self.get_internal_rect()
+        self.text.x = rect.x + 5
+        self.text.y = rect.y + 5
+        self.text.max_width = rect.width - 10
         self.text.update()
         pass
 
     def get_internal_rect(self):
-        return pygame.Rect(self.position[0] + self.border_thickness, self.position[1] + self.border_thickness,
+        return pygame.Rect(self.x + self.border_thickness, self.y + self.border_thickness,
                            self.width - 2 * self.border_thickness, self.height - 2 * self.border_thickness)
 
     def set_encounter_text(self, text):

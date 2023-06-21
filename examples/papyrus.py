@@ -1,6 +1,9 @@
 from modules.battle import Battle, Enemy
 import pygame
 
+from modules.util import InterpolationManager, Interpolation
+from modules.constants import WIDTH
+
 
 # Example battle against Papyrus using the Battle class
 class PapyrusBattle(Battle):
@@ -8,6 +11,16 @@ class PapyrusBattle(Battle):
         super(PapyrusBattle, self).__init__()
         self.enemies = [PapyrusEnemy()]
         self.battle_box.set_encounter_text("A wild papyrus appeared!")
+        InterpolationManager().add_interpolation(
+            Interpolation(self.buttons[0], "y", 450, 100, 5000, Interpolation.EASE_OUT))
+        InterpolationManager().add_interpolation(
+            Interpolation(self.battle_box, "width", 575, 300, 2000, Interpolation.EASE_OUT))
+        InterpolationManager().add_interpolation(
+            Interpolation(self.battle_box, "x", 33, WIDTH / 2 - 150, 2000, Interpolation.EASE_OUT))
+        InterpolationManager().add_interpolation(
+            Interpolation(self.buttons[1], "y", 450, 200, 5000, Interpolation.EASE_OUT))
+        InterpolationManager().add_interpolation(
+            Interpolation(self.buttons[1], "x", self.buttons[1].x, self.buttons[0].x, 5000, Interpolation.EASE_OUT))
 
     def render(self, surface):
         super(PapyrusBattle, self).render(surface)
