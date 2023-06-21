@@ -1,10 +1,11 @@
 import pygame
 import enum
+import random
 
-from modules.constants import CONFIRM_BUTTON
+from modules.constants import CONFIRM_BUTTON, DISMISS_BUTTON
 from modules.game import GameMode, Game
 from modules.player import Player
-from modules.util import resource_path, draw_gradient, draw_text, ProgressiveText, Singleton
+from modules.util import resource_path, draw_gradient, draw_text, ProgressiveText, Singleton, draw_text_size
 
 
 class BattleState():
@@ -13,6 +14,7 @@ class BattleState():
     ATTACKING = 3
     DEFENDING = 4
     DIALOGUE = 5
+    SELF_TALK = 6
 
 
 class Battle(GameMode):
@@ -29,10 +31,7 @@ class Battle(GameMode):
         self.player_object = PlayerObject(50, 50, (255, 0, 0))
         self.battle_box = BattleBox(position=(33, game.surface.get_height() / 2 + 9), width=575, height=140)
         battle_rect = self.battle_box.get_internal_rect()
-        self.text = ProgressiveText(
-            "[instant]Example text [color:ff0000] in red with different font [font:default][color:00aaaa][charspacing:5]and spacing displayed instantly",
-            battle_rect.width - 10, "default", 27, battle_rect.x + 10,
-            battle_rect.y + 10, 2)
+        self.menu = MenuContainer(x=battle_rect.x, y=battle_rect.y, width=battle_rect.width, height=battle_rect.height)
         self.add_default_buttons()
 
     def add_default_buttons(self):
@@ -75,15 +74,16 @@ class Battle(GameMode):
             enemy.render(surface)
         self.player_stats.render(surface)
         self.battle_box.render(surface)
-        self.text.draw(surface)
+        if self.state is BattleState.BUTTON_SELECT or self.state is BattleState.SELF_TALK:
+            self.battle_box.render_text(surface)
+        self.menu.render(surface)
         self.player_object.render(surface)
         pass
 
     def update(self, surface):
-        self.text.update()
         self.player_object.update()
-        # if self.text.finished and self.text.target_text != "Now prepare to die...":
-        #     self.text.set_text("Now prepare to die...")
+        self.battle_box.update()
+
         pass
 
     def select_button(self, button):
@@ -102,8 +102,28 @@ class Battle(GameMode):
                         self.select_button(self.selected_button + 1)
                     elif event.key in CONFIRM_BUTTON:
                         # confirm the selection
-                        print("confirmed")
+                        menu = Menu()
+                        menu.add_item(MenuItem("Papyrus"))
+                        menu.add_item(MenuItem("Test"))
+                        for i in range(random.randint(1, 5)):
+                            menu.add_item(MenuItem(f"Test #{i + 1}"))
+                        self.menu.set_menu(menu)
+                        self.state = BattleState.MENU_SELECT
                         pass
+                pass
+            case BattleState.MENU_SELECT:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_LEFT:
+                        self.menu.select_next_in_row(-1)
+                    elif event.key == pygame.K_RIGHT:
+                        self.menu.select_next_in_row(1)
+                    elif event.key == pygame.K_UP:
+                        self.menu.select_next_in_column(-1)
+                    elif event.key == pygame.K_DOWN:
+                        self.menu.select_next_in_column(1)
+                    elif event.key == DISMISS_BUTTON:
+                        self.menu.set_menu(None)
+                        self.state = BattleState.BUTTON_SELECT
                 pass
             case BattleState.DEFENDING:
                 pass
@@ -290,7 +310,13 @@ class BattleBox(GUIElement):
         self.border_thickness = 5
         self.background_color = (0, 0, 0)
         self.border_color = (255, 255, 255)
-        self.text = None
+        rect = self.get_internal_rect()
+        self.text = ProgressiveText(x=rect.x + 5, y=rect.y + 5, max_width=rect.width - 10)
+        self.menu = None
+        self.current_menu_page = 0
+
+    def render_text(self, surface):
+        self.text.draw(surface)
 
     def render(self, surface):
         pygame.draw.rect(surface, self.background_color, (self.position[0], self.position[1], self.width, self.height))
@@ -298,11 +324,21 @@ class BattleBox(GUIElement):
                          self.border_thickness)
 
     def update(self):
+        self.text.update()
         pass
 
     def get_internal_rect(self):
         return pygame.Rect(self.position[0] + self.border_thickness, self.position[1] + self.border_thickness,
                            self.width - 2 * self.border_thickness, self.height - 2 * self.border_thickness)
+
+    def set_encounter_text(self, text):
+        self.text.set_text(text)
+
+    def is_encounter_text_finished(self):
+        return self.text.finished
+
+    def open_menu(self, menu):
+        self.menu = menu
 
 
 class MenuItem:
@@ -319,26 +355,144 @@ class MenuItem:
             self.submenu.display()
 
 
+class MenuContainer:
+    def __init__(self, menu=None, x=0, y=0, width=200, height=200, columns=2, spacing=5, font_size=27):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.font_size = font_size
+        self.spacing = spacing
+        self.columns = columns
+        self.active_menu = None
+        self.set_menu(menu)
+
+    def set_menu(self, menu):
+        self.active_menu = menu
+        self.select_item(0)
+
+    def items_per_page(self):
+        remaining_height = self.height - draw_text_size("Sample", self.font_size)[1]
+        row_items = 0
+
+        while remaining_height > 0:
+            remaining_height -= draw_text_size("Sample", self.font_size)[1] + self.spacing
+            if remaining_height > 0:
+                row_items += 1
+
+        return row_items * self.columns
+
+    def get_items_for_page(self, page_number):
+        start_index = (page_number - 1) * self.items_per_page()
+        end_index = start_index + self.items_per_page()
+        return self.active_menu.items[start_index:end_index]
+
+    def get_page_number_by_index(self, index):
+        items_per_page = self.items_per_page()
+        return index // items_per_page + 1
+
+    def get_total_page_count(self):
+        items_count = len(self.active_menu.items)
+        items_per_page = self.items_per_page()
+        total_pages = items_count // items_per_page
+        if items_count % items_per_page > 0:
+            total_pages += 1
+        return total_pages
+
+    def get_heart_position(self):
+        x = self.x + 60 - 30
+        y = self.y + 5 + 8
+        items_on_current_page = self.get_items_for_page(
+            self.get_page_number_by_index(self.active_menu.selected_index))
+        selected_item = self.active_menu.get_selected_item()
+
+        for item in items_on_current_page:
+            if item == selected_item:
+                return x, y
+            _, height = draw_text_size(item.text, self.font_size)
+            y += height + 5
+            if y - self.y > self.height - self.font_size * 2:
+                x += 200
+                y = self.y + 5 + 8
+
+        return x, y
+
+    def get_column_range(self, column_number):
+        items_per_page = self.items_per_page()
+        items_per_row = items_per_page // self.columns
+        start_index = column_number * items_per_row
+        end_index = start_index + items_per_row
+        total_items = len(self.active_menu.items)
+
+        if start_index < total_items:
+            return list(range(start_index, min(end_index, total_items)))
+        else:
+            return []
+
+    def select_next_in_row(self, direction):
+        items_per_row = self.items_per_page() // self.columns
+        new_index = self.active_menu.selected_index + (direction * items_per_row)
+        self.select_item(new_index)
+
+    def select_next_in_column(self, direction):
+        items_per_row = self.items_per_page() // self.columns
+        column_number = self.active_menu.selected_index // items_per_row
+        column_range = self.get_column_range(column_number)
+        current_index_in_column = column_range.index(self.active_menu.selected_index)
+
+        new_index_in_column = (current_index_in_column + direction) % len(column_range)
+        new_index = column_range[new_index_in_column]
+
+        self.select_item(new_index)
+
+    def select_item(self, index):
+        if self.active_menu is not None:
+            total_items = len(self.active_menu.items)
+            clamped_index = max(0, min(index, total_items - 1))
+            self.active_menu.selected_index = clamped_index
+            player_object = PlayerObject()
+            player_object.set_position(*self.get_heart_position())
+
+    def render(self, surface):
+        if self.active_menu is None:
+            return
+        x = self.x + 60
+        y = self.y + 5
+        items_on_current_page = self.get_items_for_page(
+            self.get_page_number_by_index(self.active_menu.selected_index))
+        for item in items_on_current_page:
+            if y - self.y > self.height - self.font_size * 2:
+                x += 200
+                y = self.y + 5
+            name = f"* {item.text}"
+            width, height = draw_text_size(name, self.font_size)
+            draw_text(surface, name, self.font_size, (255, 255, 255),
+                      x, y)
+            y += height + 5
+
+        y = self.y + self.height - self.font_size - 10
+        page_count = self.get_total_page_count()
+        page_number = self.get_page_number_by_index(self.active_menu.selected_index)
+        if page_count > 1:
+            draw_text(surface, f"PAGE {page_number}", self.font_size, (255, 255, 255),
+                      x, y)
+
+    def update(self):
+        pass  # logic for updating the menu like input handling goes here
+
+
 class Menu:
-    def __init__(self, title, items=None, parent_menu=None):
+    def __init__(self, title="", items=None, parent_menu=None):
         self.title = title
         self.items = items if items is not None else []
         self.parent_menu = parent_menu
+        self.selected_index = 0
 
     def add_item(self, item):
         self.items.append(item)
 
-    def display(self):
-        print(self.title)
-        for i, item in enumerate(self.items):
-            print(f"{i + 1}. {item.text}")
+    def select_item(self, index):
+        self.selected_index = index
 
-        choice = int(input("Choose an option: ")) - 1
-
-        if 0 <= choice < len(self.items):
-            self.items[choice].execute()
-        else:
-            print("Invalid option")
-
-        if self.parent_menu is not None:
-            self.parent_menu.display()
+    def get_selected_item(self):
+        return self.items[self.selected_index]

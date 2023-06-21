@@ -14,6 +14,7 @@ class Singleton(type):
 
 import re
 
+
 class StyledText:
     def __init__(self, text, color, font_name, font_size, x, y, char_spacing=0):
         self.text = text
@@ -24,8 +25,9 @@ class StyledText:
         self.y = y
         self.char_spacing = char_spacing
 
+
 class ProgressiveText:
-    def __init__(self, target_text="", max_width=100, font_name="DTM-Sans", font_size=27, x=0, y=0, tick_length=2):
+    def __init__(self, target_text="", max_width=100, font_name="default", font_size=27, x=0, y=0, tick_length=2):
         self.target_text = target_text
         self.current_text = ""
         self.max_width = max_width
@@ -38,7 +40,7 @@ class ProgressiveText:
         self.tick_length = tick_length
         self.tick = 0
         self.finished = False
-        self.char_spacing = 1
+        self.char_spacing = 2
         self.instant_command = False
         self.asterisk = False
         self.set_text(target_text)
@@ -97,7 +99,7 @@ class ProgressiveText:
                     key, value = cmd.split(':', 1) if ':' in cmd else (cmd, None)
 
                     if key == 'color':
-                        current_color = tuple(int(value[i:i+2], 16) for i in (0, 2, 4))
+                        current_color = tuple(int(value[i:i + 2], 16) for i in (0, 2, 4))
                     elif key == 'font':
                         current_font_name = value
                     elif key == 'charspacing':
@@ -119,7 +121,8 @@ class ProgressiveText:
             styled_texts.append(styled_text)
 
         for styled_text in styled_texts:
-            draw_text(surface, styled_text.text, styled_text.font_size, styled_text.color, styled_text.x, styled_text.y, font_name=styled_text.font_name)
+            draw_text(surface, styled_text.text, styled_text.font_size, styled_text.color, styled_text.x, styled_text.y,
+                      font_name=styled_text.font_name)
 
     def skip(self):
         self.current_text = self.target_text
@@ -209,8 +212,8 @@ def draw_text(surface, text, size, color, x, y, anchor="topleft", rotation: int 
         surface.blit(text_surface, text_rect)
 
 
-def draw_text_size(text, size, font_name="DTM-Sans"):
-    font = pygame.font.Font(font_dictionary[font_name], size)
+def draw_text_size(text, size, font_name="default"):
+    font = load_font(font_dictionary[font_name], size)
     text_surface = font.render(text, True, (0, 0, 0))
     text_rect = text_surface.get_rect()
     return text_rect.width, text_rect.height

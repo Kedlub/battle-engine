@@ -7,6 +7,7 @@ class PapyrusBattle(Battle):
     def __init__(self):
         super(PapyrusBattle, self).__init__()
         self.enemies = [PapyrusEnemy()]
+        self.battle_box.set_encounter_text("A wild papyrus appeared!")
 
     def render(self, surface):
         super(PapyrusBattle, self).render(surface)
