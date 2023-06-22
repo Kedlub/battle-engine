@@ -11,19 +11,27 @@ class PapyrusBattle(Battle):
         super(PapyrusBattle, self).__init__()
         self.enemies = [PapyrusEnemy()]
         self.battle_box.set_encounter_text("A wild papyrus appeared!")
-        InterpolationManager().add_interpolation(
-            Interpolation(self.battle_box, "y", HEIGHT, self.battle_box.y, 3000, Interpolation.EASE_OUT))
+        # InterpolationManager().add_interpolation(
+        #     Interpolation(self.battle_box, "y", HEIGHT, self.battle_box.y, 3000, Interpolation.EASE_OUT))
         InterpolationManager().add_interpolation(
             Interpolation(self.player_stats, "y", HEIGHT + 200, self.player_stats.y, 3000, Interpolation.EASE_OUT))
         for i, button in enumerate(self.buttons):
             InterpolationManager().add_interpolation(
-                Interpolation(button, "y", HEIGHT + (300 * (i+1)), button.y, 3000, Interpolation.EASE_OUT))
+                Interpolation(button, "y", HEIGHT + (300 * (i + 1)), button.y, 3000, Interpolation.EASE_OUT))
+        self.tick = 0
+        self.target.show()
 
     def render(self, surface):
         super(PapyrusBattle, self).render(surface)
 
     def update(self, surface):
         super(PapyrusBattle, self).update(surface)
+        self.tick += 1
+        if self.tick == 150:
+            self.target.hide()
+        if self.tick == 200:
+            InterpolationManager().add_interpolation(
+                Interpolation(self.player_stats.player, "max_health", self.player_stats.player.max_health, 192, 3000, Interpolation.EASE_OUT))
 
     def process_input(self, event):
         super(PapyrusBattle, self).process_input(event)

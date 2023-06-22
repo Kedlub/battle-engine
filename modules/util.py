@@ -11,6 +11,7 @@ class Singleton(type):
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
+
 class StyledText:
     def __init__(self, text, color, font_name, font_size, x, y, char_spacing=0):
         self.text = text
@@ -140,6 +141,7 @@ class ProgressiveText:
         if self.instant_command:
             self.current_text = self.target_text_clean
 
+
 class Singleton(type):
     _instances = {}
 
@@ -155,7 +157,7 @@ class Interpolation:
     EASE_OUT = 2
     EASE_IN_OUT = 3
 
-    def __init__(self, obj, attr, start, end, duration, easing_mode=LINEAR):
+    def __init__(self, obj, attr, start, end, duration, easing_mode=LINEAR, floating_point=False):
         self.obj = obj
         self.attr = attr
         self.start = start
@@ -163,6 +165,7 @@ class Interpolation:
         self.duration = duration
         self.easing_mode = easing_mode
         self.elapsed_time = 0
+        self.floating_point = floating_point
 
     def update(self, delta_time):
         self.elapsed_time += delta_time
@@ -180,10 +183,12 @@ class Interpolation:
             if t < 0.5:
                 value = self.start + (self.end - self.start) / 2 * t * t * 2
             else:
-                value = self.start + (self.end - self.start) / 2 * (1 - (1 - (t * 2 - 1)) * (1 - (t * 2 - 1))) + (self.end - self.start) / 2
+                value = self.start + (self.end - self.start) / 2 * (1 - (1 - (t * 2 - 1)) * (1 - (t * 2 - 1))) + (
+                            self.end - self.start) / 2
 
-        setattr(self.obj, self.attr, value)
+        setattr(self.obj, self.attr, value if self.floating_point else int(value))
         return t != 1
+
 
 class InterpolationManager(metaclass=Singleton):
 
@@ -191,15 +196,16 @@ class InterpolationManager(metaclass=Singleton):
         self.interpolations = []
 
     def add_interpolation(self, interpolation):
+        interpolation.elapsed_time = 0
         self.interpolations.append(interpolation)
 
     def remove_interpolation(self, interpolation):
         self.interpolations.remove(interpolation)
 
     def update(self, delta_time):
-        self.interpolations = [interpolation for interpolation in self.interpolations if interpolation.update(delta_time)]
+        self.interpolations = [interpolation for interpolation in self.interpolations if
+                               interpolation.update(delta_time)]
 
-    
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """

@@ -34,6 +34,7 @@ class Battle(GameMode):
         battle_rect = self.battle_box.get_internal_rect()
         self.menu = MenuContainer(x=battle_rect.x, y=battle_rect.y, width=battle_rect.width, height=battle_rect.height)
         self.add_default_buttons()
+        self.target = TargetUI(self.battle_box)
 
     def add_default_buttons(self):
         self.add_button("assets/battle/button/fight0.png", "assets/battle/button/fight1.png")
@@ -79,6 +80,7 @@ class Battle(GameMode):
             self.battle_box.render_text(surface)
         self.menu.render(surface)
         self.player_object.render(surface)
+        self.target.render(surface)
         pass
 
     def update(self, surface):
@@ -245,6 +247,72 @@ class GUIElement:
 
     def render(self, screen):
         raise NotImplementedError("render method should be implemented in derived classes")
+
+
+class TargetUI(GUIElement):
+    def __init__(self, battle_box):
+        super().__init__()
+        bg_sprite = pygame.image.load(resource_path("assets/battle/target/target.png"))
+        aim_sprite1 = pygame.image.load(resource_path("assets/battle/target/target_aim1.png"))
+        aim_sprite2 = pygame.image.load(resource_path("assets/battle/target/target_aim2.png"))
+        self.background = bg_sprite
+        self.aim_cursor = [aim_sprite1, aim_sprite2]
+        self.direction = random.choice([-1, 1])
+        self.battle_box = battle_box
+        self.rect = battle_box.get_internal_rect()
+        self.cursor_pos = self.rect.left if self.direction == 1 else self.rect.right
+        self.shown = False
+        self.active = False
+        self.hit_power = 0
+        self.frame_counter = 0
+        self.alpha = 255
+        self.hide_interpolation = Interpolation(self, "alpha", 255, 0, 3000, Interpolation.LINEAR)
+        self.scale_interpolation = Interpolation(self.rect, "width", self.rect.width, self.rect.width // 5, 3000)
+        self.move_interpolation = Interpolation(self.rect, "x", self.rect.x, self.rect.x + (self.rect.width // 5) * 2,
+                                                3000)
+
+    def process_event(self, event):
+        if event.type == CONFIRM_BUTTON:
+            self.active = not self.active
+            if not self.active:
+                self.hit_power = abs(self.cursor_pos - self.rect.centerx) / float(self.rect.width // 2)
+
+    def update(self):
+        if self.active:
+            self.cursor_pos += self.direction
+            if self.cursor_pos in (self.rect.left, self.rect.right):
+                self.direction *= -1
+
+    def render(self, surface):
+        if self.shown:
+            self.background.fill((255, 255, 255, self.alpha), special_flags=pygame.BLEND_RGBA_MULT)
+            surface.blit( pygame.transform.scale(self.background, self.rect.size), self.rect)
+            if self.active:
+                surface.blit(self.aim_cursor[self.frame_counter // 5], (self.cursor_pos, self.rect.y))
+            self.frame_counter += 1
+            if self.frame_counter // 5 >= len(self.aim_cursor):
+                self.frame_counter = 0
+            if self.alpha == 0:
+                self.shown = False
+
+    def show(self):
+        self.hit_power = 0
+        self.direction = random.choice([-1, 1])
+        self.rect = self.battle_box.get_internal_rect()
+        self.cursor_pos = self.rect.left if self.direction == 1 else self.rect.right
+        self.alpha = 255
+        self.shown = True
+        self.active = True
+        self.hide_interpolation = Interpolation(self, "alpha", 255, 0, 3000, Interpolation.LINEAR)
+        self.scale_interpolation = Interpolation(self.rect, "width", self.rect.width, self.rect.width // 5, 3000)
+        self.move_interpolation = Interpolation(self.rect, "x", self.rect.x, self.rect.x + (self.rect.width // 5) * 2,
+                                                3000)
+        pass
+
+    def hide(self):
+        InterpolationManager().add_interpolation(self.hide_interpolation)
+        InterpolationManager().add_interpolation(self.scale_interpolation)
+        InterpolationManager().add_interpolation(self.move_interpolation)
 
 
 class PlayerStats(GUIElement):
