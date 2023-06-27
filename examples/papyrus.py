@@ -19,7 +19,6 @@ class PapyrusBattle(Battle):
             InterpolationManager().add_interpolation(
                 Interpolation(button, "y", HEIGHT + (300 * (i + 1)), button.y, 3000, Interpolation.EASE_OUT))
         self.tick = 0
-        self.target.show()
 
     def render(self, surface):
         super(PapyrusBattle, self).render(surface)
@@ -27,11 +26,10 @@ class PapyrusBattle(Battle):
     def update(self, surface):
         super(PapyrusBattle, self).update(surface)
         self.tick += 1
-        if self.tick == 150:
-            self.target.hide()
         if self.tick == 200:
             InterpolationManager().add_interpolation(
-                Interpolation(self.player_stats.player, "max_health", self.player_stats.player.max_health, 192, 3000, Interpolation.EASE_OUT))
+                Interpolation(self.player_stats.player, "max_health", self.player_stats.player.max_health, 192, 3000,
+                              Interpolation.EASE_OUT))
 
     def process_input(self, event):
         super(PapyrusBattle, self).process_input(event)

@@ -9,23 +9,25 @@ from modules.util import resource_path, draw_gradient, draw_text, ProgressiveTex
     InterpolationManager, Interpolation
 
 
-class BattleState():
-    BUTTON_SELECT = 1
-    MENU_SELECT = 2
-    ATTACKING = 3
-    DEFENDING = 4
-    DIALOGUE = 5
-    SELF_TALK = 6
+class BattleState:
+    def handle_input(self, battle, event):
+        pass
+
+    def update(self, battle):
+        pass
+
+    def render(self, battle, surface):
+        pass
 
 
 class Battle(GameMode):
-    def __init__(self, game=Game()):
+    def __init__(self, game=Game(), init_default=True):
         super().__init__(game)
         self.button_data = []
         self.buttons = []
         self.rounds = []
         self.enemies = []
-        self.state = BattleState.BUTTON_SELECT
+        self.gameStateStack = [ButtonSelectState()]
         self.selected_button = 0
         self.player_stats = PlayerStats(Player(name="Chara", level=19, health=90, max_health=92),
                                         (40, game.surface.get_height() - 80))
@@ -76,19 +78,18 @@ class Battle(GameMode):
             enemy.render(surface)
         self.player_stats.render(surface)
         self.battle_box.render(surface)
-        if self.state is BattleState.BUTTON_SELECT or self.state is BattleState.SELF_TALK:
-            self.battle_box.render_text(surface)
-        self.menu.render(surface)
+        if self.gameStateStack:
+            self.gameStateStack[-1].render(self, surface)
         self.player_object.render(surface)
         self.target.render(surface)
         pass
 
     def update(self, surface):
-        if self.state is BattleState.BUTTON_SELECT:
-            for button in self.buttons:
-                button.move_player()
-        self.player_object.update()
+        if self.gameStateStack:
+            self.gameStateStack[-1].update(self)
+        # self.player_object.update()
         self.battle_box.update()
+        self.target.update()
 
         pass
 
@@ -97,45 +98,76 @@ class Battle(GameMode):
         self.selected_button = button % len(self.buttons)
         self.buttons[self.selected_button].set_active(True)
 
+    def unselect_all_buttons(self):
+        for button in self.buttons:
+            button.set_active(False)
+
+    def is_active_state(self, state):
+        return self.gameStateStack and self.gameStateStack[-1] == state
+
     def process_input(self, event):
         # Implement input handling in Battle mode here
-        match self.state:
-            case BattleState.BUTTON_SELECT:
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_LEFT:
-                        self.select_button(self.selected_button - 1)
-                    elif event.key == pygame.K_RIGHT:
-                        self.select_button(self.selected_button + 1)
-                    elif event.key in CONFIRM_BUTTON:
-                        # confirm the selection
-                        menu = Menu()
-                        menu.add_item(MenuItem("Papyrus"))
-                        menu.add_item(MenuItem("Test"))
-                        for i in range(random.randint(1, 5)):
-                            menu.add_item(MenuItem(f"Test #{i + 1}"))
-                        self.menu.set_menu(menu)
-                        self.state = BattleState.MENU_SELECT
-                        pass
-                pass
-            case BattleState.MENU_SELECT:
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_LEFT:
-                        self.menu.select_next_in_row(-1)
-                    elif event.key == pygame.K_RIGHT:
-                        self.menu.select_next_in_row(1)
-                    elif event.key == pygame.K_UP:
-                        self.menu.select_next_in_column(-1)
-                    elif event.key == pygame.K_DOWN:
-                        self.menu.select_next_in_column(1)
-                    elif event.key == DISMISS_BUTTON:
-                        self.menu.set_menu(None)
-                        self.state = BattleState.BUTTON_SELECT
-                pass
-            case BattleState.DEFENDING:
-                pass
-            case _:
-                pass
+        if self.gameStateStack:
+            self.gameStateStack[-1].process_input(self, event)
         pass
+
+
+class ButtonSelectState(BattleState):
+    def render(self, battle, surface):
+        battle.battle_box.render_text(surface)
+
+    def update(self, battle):
+        for button in battle.buttons:
+            button.move_player()
+
+    def process_input(self, battle, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                battle.select_button(battle.selected_button - 1)
+            elif event.key == pygame.K_RIGHT:
+                battle.select_button(battle.selected_button + 1)
+            elif event.key in CONFIRM_BUTTON:
+                # confirm the selection
+                menu = Menu()
+                menu.add_item(MenuItem("Papyrus"))
+                menu.add_item(MenuItem("Test"))
+                for i in range(random.randint(1, 5)):
+                    menu.add_item(MenuItem(f"Test #{i + 1}"))
+                battle.menu.set_menu(menu)
+                battle.gameStateStack.append(MenuSelectState())
+
+
+class MenuSelectState(BattleState):
+    def render(self, battle, surface):
+        battle.menu.render(surface)
+
+    def process_input(self, battle, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                battle.menu.select_next_in_row(-1)
+            elif event.key == pygame.K_RIGHT:
+                battle.menu.select_next_in_row(1)
+            elif event.key == pygame.K_UP:
+                battle.menu.select_next_in_column(-1)
+            elif event.key == pygame.K_DOWN:
+                battle.menu.select_next_in_column(1)
+            elif event.key in CONFIRM_BUTTON:
+                battle.gameStateStack.append(TargetState())
+                battle.target.show()
+            elif event.key == DISMISS_BUTTON:
+                battle.menu.set_menu(None)
+                battle.gameStateStack.pop()
+
+
+class TargetState(BattleState):
+    def render(self, battle, surface):
+        pass
+
+    def process_input(self, battle, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key in CONFIRM_BUTTON:
+                battle.target.active = False
+                battle.target.hide()
 
 
 class Enemy:
@@ -202,19 +234,18 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
         self.rotation += angle
 
     def update(self):
-        if self.game.game_mode.state == BattleState.DEFENDING:
-            if self.game.keys_pressed[pygame.K_UP]:
-                self.move(0, -1)
-            if self.game.keys_pressed[pygame.K_LEFT]:
-                self.move(-1, 0)
-            if self.game.keys_pressed[pygame.K_DOWN]:
-                self.move(0, 1)
-            if self.game.keys_pressed[pygame.K_RIGHT]:
-                self.move(1, 0)
-            if self.game.keys_pressed[pygame.K_q]:
-                self.rotate(-5)
-            if self.game.keys_pressed[pygame.K_e]:
-                self.rotate(5)
+        if self.game.keys_pressed[pygame.K_UP]:
+            self.move(0, -1)
+        if self.game.keys_pressed[pygame.K_LEFT]:
+            self.move(-1, 0)
+        if self.game.keys_pressed[pygame.K_DOWN]:
+            self.move(0, 1)
+        if self.game.keys_pressed[pygame.K_RIGHT]:
+            self.move(1, 0)
+        if self.game.keys_pressed[pygame.K_q]:
+            self.rotate(-5)
+        if self.game.keys_pressed[pygame.K_e]:
+            self.rotate(5)
 
     def render(self, surface):
         rotated = pygame.transform.rotate(self.image, self.rotation)
@@ -262,6 +293,7 @@ class TargetUI(GUIElement):
         self.rect = battle_box.get_internal_rect()
         self.cursor_pos = self.rect.left if self.direction == 1 else self.rect.right
         self.shown = False
+        self.show_cursor = True
         self.active = False
         self.hit_power = 0
         self.frame_counter = 0
@@ -279,16 +311,18 @@ class TargetUI(GUIElement):
 
     def update(self):
         if self.active:
-            self.cursor_pos += self.direction
+            self.cursor_pos += self.direction * 2
             if self.cursor_pos in (self.rect.left, self.rect.right):
                 self.direction *= -1
 
     def render(self, surface):
         if self.shown:
             self.background.fill((255, 255, 255, self.alpha), special_flags=pygame.BLEND_RGBA_MULT)
-            surface.blit( pygame.transform.scale(self.background, self.rect.size), self.rect)
-            if self.active:
-                surface.blit(self.aim_cursor[self.frame_counter // 5], (self.cursor_pos, self.rect.y))
+            surface.blit(pygame.transform.scale(self.background, self.rect.size), self.rect)
+            aim = self.aim_cursor[self.frame_counter // 5]
+            aim.fill((255, 255, 255, self.alpha), special_flags=pygame.BLEND_RGBA_MULT)
+            if self.show_cursor:
+                surface.blit(aim, (self.cursor_pos, self.rect.y))
             self.frame_counter += 1
             if self.frame_counter // 5 >= len(self.aim_cursor):
                 self.frame_counter = 0
@@ -302,6 +336,7 @@ class TargetUI(GUIElement):
         self.cursor_pos = self.rect.left if self.direction == 1 else self.rect.right
         self.alpha = 255
         self.shown = True
+        self.show_cursor = True
         self.active = True
         self.hide_interpolation = Interpolation(self, "alpha", 255, 0, 3000, Interpolation.LINEAR)
         self.scale_interpolation = Interpolation(self.rect, "width", self.rect.width, self.rect.width // 5, 3000)
@@ -310,6 +345,7 @@ class TargetUI(GUIElement):
         pass
 
     def hide(self):
+        self.show_cursor = False
         InterpolationManager().add_interpolation(self.hide_interpolation)
         InterpolationManager().add_interpolation(self.scale_interpolation)
         InterpolationManager().add_interpolation(self.move_interpolation)
