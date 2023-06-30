@@ -19,6 +19,9 @@ class BattleState:
     def render(self, battle, surface):
         pass
 
+    def show_soul(self):
+        return True
+
 
 class Battle(GameMode):
     def __init__(self, game=Game(), init_default=True):
@@ -80,7 +83,8 @@ class Battle(GameMode):
         self.battle_box.render(surface)
         if self.gameStateStack:
             self.gameStateStack[-1].render(self, surface)
-        self.player_object.render(surface)
+            if self.gameStateStack[-1].show_soul():
+                self.player_object.render(surface)
         self.target.render(surface)
         pass
 
@@ -168,6 +172,9 @@ class TargetState(BattleState):
             if event.key in CONFIRM_BUTTON:
                 battle.target.active = False
                 battle.target.hide()
+
+    def show_soul(self):
+        return False
 
 
 class Enemy:
@@ -297,6 +304,7 @@ class TargetUI(GUIElement):
         self.active = False
         self.hit_power = 0
         self.frame_counter = 0
+        self.speed = 5
         self.alpha = 255
         self.hide_interpolation = Interpolation(self, "alpha", 255, 0, 3000, Interpolation.LINEAR)
         self.scale_interpolation = Interpolation(self.rect, "width", self.rect.width, self.rect.width // 5, 3000)
@@ -311,7 +319,7 @@ class TargetUI(GUIElement):
 
     def update(self):
         if self.active:
-            self.cursor_pos += self.direction * 2
+            self.cursor_pos += self.direction * self.speed
             if self.cursor_pos in (self.rect.left, self.rect.right):
                 self.direction *= -1
 
