@@ -1,6 +1,7 @@
 import pygame
 import enum
 import random
+import os
 
 from modules.constants import CONFIRM_BUTTON, DISMISS_BUTTON, WIDTH
 from modules.game import GameMode, Game
@@ -40,6 +41,7 @@ class Battle(GameMode):
         self.menu = MenuContainer(x=battle_rect.x, y=battle_rect.y, width=battle_rect.width, height=battle_rect.height)
         self.add_default_buttons()
         self.target = TargetUI(self.battle_box)
+        self.hit_visual = HitVisual(5, "assets/battle/hit/", "knife")
 
     def add_default_buttons(self):
         self.add_button("assets/battle/button/fight0.png", "assets/battle/button/fight1.png")
@@ -86,6 +88,8 @@ class Battle(GameMode):
             if self.gameStateStack[-1].show_soul():
                 self.player_object.render(surface)
         self.target.render(surface)
+        if self.hit_visual:
+            self.hit_visual.render(surface)
         pass
 
     def update(self, surface):
@@ -94,7 +98,8 @@ class Battle(GameMode):
         # self.player_object.update()
         self.battle_box.update()
         self.target.update()
-
+        if self.hit_visual:
+            self.hit_visual.update()
         pass
 
     def select_button(self, button):
@@ -170,6 +175,7 @@ class TargetState(BattleState):
     def process_input(self, battle, event):
         if event.type == pygame.KEYDOWN:
             if event.key in CONFIRM_BUTTON:
+                battle.hit_visual.activate(battle.enemies[0].get_rect())
                 battle.target.active = False
                 battle.target.hide()
 
@@ -186,6 +192,10 @@ class Enemy:
         self.max_health = health
         self.name = name
         self.acts = []
+
+    def get_rect(self):
+        width, height = self.sprite.get_size()
+        return pygame.Rect(self.position[0], self.position[1], width, height)
 
     def add_act(self, name, func):
         self.acts.append({name: func})
@@ -285,6 +295,46 @@ class GUIElement:
 
     def render(self, screen):
         raise NotImplementedError("render method should be implemented in derived classes")
+
+
+class HitVisual(GUIElement):
+    def __init__(self, speed, folder, name):
+        super().__init__()
+        self.speed = speed
+        self.folder = folder
+        self.name = name
+        self.frame = 0
+        self.active = False
+        self.frames = self.load_frames()
+
+    def activate(self, rect):
+        self.active = True
+        self.x = rect.centerx - self.frames[0].get_width() / 2
+        self.y = rect.centery - self.frames[0].get_height() / 2
+
+    def load_frames(self):
+        frames = []
+        i = 1
+        while True:
+            try:
+                frames.append(pygame.image.load(resource_path(f"{self.folder}/{self.name}{i}.png")))
+                i += 1
+            except FileNotFoundError:
+                break
+        return frames
+
+    def update(self):
+        if not self.active:
+            return
+        self.frame += 1
+        if self.frame >= len(self.frames) * self.speed:
+            self.active = False
+
+    def render(self, surface):
+        if not self.active:
+            return
+        frame_index = self.frame // self.speed
+        surface.blit(self.frames[frame_index], (self.x, self.y))
 
 
 class TargetUI(GUIElement):
