@@ -2,6 +2,7 @@ import pygame
 import enum
 import random
 import os
+import math
 
 from modules.constants import CONFIRM_BUTTON, DISMISS_BUTTON, WIDTH
 from modules.game import GameMode, Game
@@ -95,6 +96,8 @@ class Battle(GameMode):
     def update(self, surface):
         if self.gameStateStack:
             self.gameStateStack[-1].update(self)
+        for enemy in self.enemies:
+            enemy.update(surface)
         # self.player_object.update()
         self.battle_box.update()
         self.target.update()
@@ -138,10 +141,8 @@ class ButtonSelectState(BattleState):
             elif event.key in CONFIRM_BUTTON:
                 # confirm the selection
                 menu = Menu()
-                menu.add_item(MenuItem("Papyrus"))
-                menu.add_item(MenuItem("Test"))
-                for i in range(random.randint(1, 5)):
-                    menu.add_item(MenuItem(f"Test #{i + 1}"))
+                for enemy in battle.enemies:
+                    menu.add_item(MenuItem(enemy.name))
                 battle.menu.set_menu(menu)
                 battle.gameStateStack.append(MenuSelectState())
 
@@ -178,6 +179,7 @@ class TargetState(BattleState):
                 battle.hit_visual.activate(battle.enemies[0].get_rect())
                 battle.target.active = False
                 battle.target.hide()
+                battle.enemies[0].shake(30)
 
     def show_soul(self):
         return False
@@ -187,11 +189,14 @@ class Enemy:
     def __init__(self, sprite, name="TestMon", position=(0, 0), rotation=0, health=20):
         self.sprite = sprite
         self.position = position
+        self.base_position = position
         self.rotation = rotation
         self.health = health
         self.max_health = health
         self.name = name
         self.acts = []
+        self.hit_power = 0
+        self.shake_ticks = 0
 
     def get_rect(self):
         width, height = self.sprite.get_size()
@@ -201,7 +206,26 @@ class Enemy:
         self.acts.append({name: func})
 
     def update(self, surface):
+        if self.shake_ticks > 0:
+            self.shake_ticks -= 1
+            if self.shake_ticks % self.shake_speed == 0:
+                # Move side to side every shake_speed ticks
+                sign = 1 if (self.shake_ticks / self.shake_speed) % 2 == 0 else -1
+                shake_offset = sign * self.shake_dist
+                self.position = (self.base_position[0] + shake_offset, self.base_position[1])
+                self.shake_dist *= 0.7
+            if self.shake_ticks == 0:
+                self.shake_dist = 0
+                self.position = self.base_position
         pass
+
+    def shake(self, hit_power):
+        self.hit_power = hit_power
+        power_ratio = min(hit_power / float(self.max_health), 1.0)
+        self.shake_dist = int(power_ratio * (self.sprite.get_width() / 2))
+        # A high power_ratio means more ticks per movement, hence slower shaking
+        self.shake_speed = max(1, int(20 * power_ratio))
+        self.shake_ticks = 6 * self.shake_speed
 
     def render(self, surface):
         # Base implementation of render using only one sprite, enemies don't have to use this one sprite,
