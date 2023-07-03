@@ -10,8 +10,12 @@ DESIGN_RESOLUTION = (640, 480)
 # GameMode is an abstract class that represents the game state and processes necessary game actions such as 
 # rendering, updating, and handling input events.
 class GameMode:
+    # Do basic variable initialization here, but leave 
     def __init__(self, game):
         self.game = game
+        pass
+
+    def post_init(self):
         pass
 
     def render(self, surface):
@@ -119,6 +123,7 @@ class Game(metaclass=Singleton):
 
     def set_mode(self, mode):
         self.game_mode = mode
+        self.game_mode.post_init()
 
     def run(self):
         while self.running:

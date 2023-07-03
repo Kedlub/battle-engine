@@ -9,6 +9,9 @@ from modules.constants import WIDTH, HEIGHT
 class PapyrusBattle(Battle):
     def __init__(self):
         super(PapyrusBattle, self).__init__()
+        self.tick = 0
+
+    def post_init(self):
         self.enemies = [PapyrusEnemy()]
         self.battle_box.set_encounter_text("A wild papyrus appeared!")
         # InterpolationManager().add_interpolation(
@@ -18,7 +21,6 @@ class PapyrusBattle(Battle):
         for i, button in enumerate(self.buttons):
             InterpolationManager().add_interpolation(
                 Interpolation(button, "y", HEIGHT + (300 * (i + 1)), button.y, 3000, Interpolation.EASE_OUT))
-        self.tick = 0
 
     def render(self, surface):
         super(PapyrusBattle, self).render(surface)

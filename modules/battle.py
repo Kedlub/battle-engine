@@ -39,10 +39,12 @@ class Battle(GameMode):
         self.player_object = PlayerObject(50, 50, (255, 0, 0))
         self.battle_box = BattleBox(position=(33, game.surface.get_height() / 2 + 9), width=575, height=140)
         battle_rect = self.battle_box.get_internal_rect()
-        self.menu = MenuContainer(x=battle_rect.x, y=battle_rect.y, width=battle_rect.width, height=battle_rect.height)
         self.add_default_buttons()
-        self.target = TargetUI(self.battle_box)
-        self.hit_visual = HitVisual(5, "assets/battle/hit/", "knife")
+        self.hit_visual = HitVisual.load_frames("assets/battle/hit/knife")
+        self.objects = []
+
+    def post_init(self):
+        pass
 
     def add_default_buttons(self):
         self.add_button("assets/battle/button/fight0.png", "assets/battle/button/fight1.png")
@@ -54,6 +56,15 @@ class Battle(GameMode):
     def calculate_spacing(self, num_of_buttons, screen_width):
         button_space_evenly = (screen_width - num_of_buttons * Button.default_width) / (num_of_buttons + 1)
         return button_space_evenly
+
+    def attack_enemy(self, enemy):
+        if enemy in self.enemies:
+            state = TargetState(enemy)
+            self.gameStateStack.append(state)
+
+    def use_item(self, item):
+        # TODO: implement item usage
+        pass
 
     def add_button(self, inactive_texture, active_texture):
         self.button_data.append({"inactive": inactive_texture, "active": active_texture})
@@ -86,11 +97,10 @@ class Battle(GameMode):
         self.battle_box.render(surface)
         if self.gameStateStack:
             self.gameStateStack[-1].render(self, surface)
+            for obj in self.objects:
+                obj.render(surface)
             if self.gameStateStack[-1].show_soul():
                 self.player_object.render(surface)
-        self.target.render(surface)
-        if self.hit_visual:
-            self.hit_visual.render(surface)
         pass
 
     def update(self, surface):
@@ -98,11 +108,10 @@ class Battle(GameMode):
             self.gameStateStack[-1].update(self)
         for enemy in self.enemies:
             enemy.update(surface)
+        for obj in self.objects:
+            obj.update()
         # self.player_object.update()
         self.battle_box.update()
-        self.target.update()
-        if self.hit_visual:
-            self.hit_visual.update()
         pass
 
     def select_button(self, button):
@@ -142,44 +151,56 @@ class ButtonSelectState(BattleState):
                 # confirm the selection
                 menu = Menu()
                 for enemy in battle.enemies:
-                    menu.add_item(MenuItem(enemy.name))
-                battle.menu.set_menu(menu)
-                battle.gameStateStack.append(MenuSelectState())
+                    item = MenuItem(enemy.name)
+                    item.action = lambda: battle.attack_enemy(enemy)
+                    menu.add_item(item)
+                battle.gameStateStack.append(MenuSelectState(menu))
 
 
 class MenuSelectState(BattleState):
+    def __init__(self, menu):
+        battle_rect = Game().game_mode.battle_box.get_internal_rect()
+        self.menu = MenuContainer(x=battle_rect.x, y=battle_rect.y, width=battle_rect.width, height=battle_rect.height)
+        self.menu.set_menu(menu)
+
     def render(self, battle, surface):
-        battle.menu.render(surface)
+        self.menu.render(surface)
 
     def process_input(self, battle, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                battle.menu.select_next_in_row(-1)
+                self.menu.select_next_in_row(-1)
             elif event.key == pygame.K_RIGHT:
-                battle.menu.select_next_in_row(1)
+                self.menu.select_next_in_row(1)
             elif event.key == pygame.K_UP:
-                battle.menu.select_next_in_column(-1)
+                self.menu.select_next_in_column(-1)
             elif event.key == pygame.K_DOWN:
-                battle.menu.select_next_in_column(1)
+                self.menu.select_next_in_column(1)
             elif event.key in CONFIRM_BUTTON:
-                battle.gameStateStack.append(TargetState())
-                battle.target.show()
+                self.menu.run_selected_item()
             elif event.key == DISMISS_BUTTON:
-                battle.menu.set_menu(None)
                 battle.gameStateStack.pop()
 
 
 class TargetState(BattleState):
+    def __init__(self, enemy):
+        super().__init__()
+        self.target = TargetUI(Game().game_mode.battle_box, enemy.max_health)
+        self.enemy = enemy
+        self.target.show()
+
     def render(self, battle, surface):
-        pass
+        self.target.render(surface)
 
     def process_input(self, battle, event):
         if event.type == pygame.KEYDOWN:
-            if event.key in CONFIRM_BUTTON:
-                battle.hit_visual.activate(battle.enemies[0].get_rect())
-                battle.target.active = False
-                battle.target.hide()
-                battle.enemies[0].shake(30)
+            if event.key in CONFIRM_BUTTON and self.target.active:
+                self.target.active = False
+                power = self.target.get_hit_power()
+                self.enemy.hit(power)
+
+    def update(self, battle):
+        self.target.update()
 
     def show_soul(self):
         return False
@@ -192,11 +213,15 @@ class Enemy:
         self.base_position = position
         self.rotation = rotation
         self.health = health
+        self.current_health = health
         self.max_health = health
         self.name = name
         self.acts = []
         self.hit_power = 0
         self.shake_ticks = 0
+        self.being_attacked = False
+        self.hit_visual = HitVisual(5, Game().game_mode.hit_visual)
+        self.healthbar_ticks = 0
 
     def get_rect(self):
         width, height = self.sprite.get_size()
@@ -206,32 +231,72 @@ class Enemy:
         self.acts.append({name: func})
 
     def update(self, surface):
+        if self.being_attacked:
+            if not self.hit_visual.active and not self.shake_ticks:
+                # If the hit visual has finished, start the shake and deal damage if it hasn't started yet
+                power_ratio = min(self.hit_power / float(self.max_health), 1.0)
+                self.shake_dist = int(power_ratio * (self.sprite.get_width() / 2))
+                self.shake_speed = max(1, int(20 * power_ratio))
+                self.shake_ticks = 6 * self.shake_speed
+                # Subtract the hit power from the enemy's health
+                # Alternatively, this might be done based on the outcome of the shake animation
+                self.health -= self.hit_power
+                self.healthbar_ticks = 100
+            elif self.hit_visual.active:
+                # Update the hit_visual
+                self.hit_visual.update()
+
+        # The shake update stays the same
         if self.shake_ticks > 0:
             self.shake_ticks -= 1
             if self.shake_ticks % self.shake_speed == 0:
-                # Move side to side every shake_speed ticks
                 sign = 1 if (self.shake_ticks / self.shake_speed) % 2 == 0 else -1
                 shake_offset = sign * self.shake_dist
                 self.position = (self.base_position[0] + shake_offset, self.base_position[1])
-                self.shake_dist *= 0.7
+                self.shake_dist *= 0.9
             if self.shake_ticks == 0:
                 self.shake_dist = 0
                 self.position = self.base_position
-        pass
+                self.being_attacked = False
+                Game().game_mode.gameStateStack[-1].target.hide()
 
-    def shake(self, hit_power):
-        self.hit_power = hit_power
-        power_ratio = min(hit_power / float(self.max_health), 1.0)
-        self.shake_dist = int(power_ratio * (self.sprite.get_width() / 2))
-        # A high power_ratio means more ticks per movement, hence slower shaking
-        self.shake_speed = max(1, int(20 * power_ratio))
-        self.shake_ticks = 6 * self.shake_speed
+    def hit(self, damage):
+        self.being_attacked = True
+        self.hit_visual.activate(self.get_rect())
+        self.hit_power = damage
 
     def render(self, surface):
         # Base implementation of render using only one sprite, enemies don't have to use this one sprite,
         # it can instead use different sprites for different body part
         surface.blit(pygame.transform.rotate(self.sprite, self.rotation), self.position)
+        if self.hit_visual.active:
+            self.hit_visual.render(surface)
+        if self.healthbar_ticks > 0:
+            self.healthbar_ticks -= 1
+            self.draw_health_bar(surface)
         pass
+
+    def draw_health_bar(self, surface):
+        rect = self.get_rect()
+        health_bar_width = 150
+        health_bar_height = 10
+        health_bar_x = rect.centerx - health_bar_width / 2
+        health_bar_y = rect.y - 10
+
+        max_health_bar_color = (255, 0, 0)
+        current_health_bar_color = (0, 255, 0)
+
+        max_health_width = health_bar_width
+        current_health_width = (self.health / self.max_health) * health_bar_width
+
+        # Draw the red background representing the maximum health
+        pygame.draw.rect(surface, max_health_bar_color,
+                        (health_bar_x, health_bar_y, max_health_width, health_bar_height))
+
+        # Draw the green foreground representing the current health
+        pygame.draw.rect(surface, current_health_bar_color,
+                        (health_bar_x, health_bar_y, current_health_width, health_bar_height))
+
 
     def process_input(self, event):
         pass
@@ -322,26 +387,26 @@ class GUIElement:
 
 
 class HitVisual(GUIElement):
-    def __init__(self, speed, folder, name):
+    def __init__(self, speed, frames):
         super().__init__()
         self.speed = speed
-        self.folder = folder
-        self.name = name
         self.frame = 0
         self.active = False
-        self.frames = self.load_frames()
+        self.frames = frames
 
     def activate(self, rect):
         self.active = True
+        self.frame = 0
         self.x = rect.centerx - self.frames[0].get_width() / 2
         self.y = rect.centery - self.frames[0].get_height() / 2
 
-    def load_frames(self):
+    @staticmethod
+    def load_frames(path):
         frames = []
         i = 1
         while True:
             try:
-                frames.append(pygame.image.load(resource_path(f"{self.folder}/{self.name}{i}.png")))
+                frames.append(pygame.image.load(resource_path(f"{path}{i}.png")))
                 i += 1
             except FileNotFoundError:
                 break
@@ -362,7 +427,7 @@ class HitVisual(GUIElement):
 
 
 class TargetUI(GUIElement):
-    def __init__(self, battle_box):
+    def __init__(self, battle_box, enemy_max_health):
         super().__init__()
         bg_sprite = pygame.image.load(resource_path("assets/battle/target/target.png"))
         aim_sprite1 = pygame.image.load(resource_path("assets/battle/target/target_aim1.png"))
@@ -376,20 +441,20 @@ class TargetUI(GUIElement):
         self.shown = False
         self.show_cursor = True
         self.active = False
-        self.hit_power = 0
         self.frame_counter = 0
         self.speed = 5
         self.alpha = 255
+        self.enemy_max_health = enemy_max_health
         self.hide_interpolation = Interpolation(self, "alpha", 255, 0, 3000, Interpolation.LINEAR)
         self.scale_interpolation = Interpolation(self.rect, "width", self.rect.width, self.rect.width // 5, 3000)
         self.move_interpolation = Interpolation(self.rect, "x", self.rect.x, self.rect.x + (self.rect.width // 5) * 2,
                                                 3000)
 
     def process_event(self, event):
-        if event.type == CONFIRM_BUTTON:
-            self.active = not self.active
-            if not self.active:
-                self.hit_power = abs(self.cursor_pos - self.rect.centerx) / float(self.rect.width // 2)
+        pass
+
+    def get_hit_power(self):
+        return abs(self.cursor_pos - self.rect.centerx) / float(self.rect.width // 2) * self.enemy_max_health
 
     def update(self):
         if self.active:
@@ -410,6 +475,7 @@ class TargetUI(GUIElement):
                 self.frame_counter = 0
             if self.alpha == 0:
                 self.shown = False
+                Game().game_mode.objects.remove(self)
 
     def show(self):
         self.hit_power = 0
@@ -427,6 +493,7 @@ class TargetUI(GUIElement):
         pass
 
     def hide(self):
+        Game().game_mode.objects.append(self)
         self.show_cursor = False
         InterpolationManager().add_interpolation(self.hide_interpolation)
         InterpolationManager().add_interpolation(self.scale_interpolation)
@@ -542,15 +609,14 @@ class BattleBox(GUIElement):
 
 
 class MenuItem:
-    def __init__(self, text, action=None, params=None, submenu=None):
+    def __init__(self, text, action=None, submenu=None):
         self.text = text
         self.action = action
-        self.params = params
         self.submenu = submenu
 
     def execute(self):
-        if self.action is not None and self.params is not None:
-            self.action(*self.params)
+        if self.action is not None:
+            self.action()
         elif self.submenu is not None:
             self.submenu.display()
 
@@ -652,6 +718,9 @@ class MenuContainer:
             self.active_menu.selected_index = clamped_index
             player_object = PlayerObject()
             player_object.set_position(*self.get_heart_position())
+
+    def run_selected_item(self):
+        self.active_menu.get_selected_item().execute()
 
     def render(self, surface):
         if self.active_menu is None:
