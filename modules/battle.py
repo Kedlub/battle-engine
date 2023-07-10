@@ -205,6 +205,21 @@ class TargetState(BattleState):
     def show_soul(self):
         return False
 
+class DefendingState(BattleState):
+    def render(self, battle, surface):
+        # TODO: Implement defending state rendering, maybe none is needed? We have the battle.objects list, which can contain the projectiles
+        pass
+
+    def process_input(self, battle, event):
+        pass
+
+    def update(self, battle):
+        battle.player_object.update()
+
+    def show_soul(self):
+        return True
+    
+
 
 class Enemy:
     def __init__(self, sprite, name="TestMon", position=(0, 0), rotation=0, health=20):
@@ -259,6 +274,7 @@ class Enemy:
                 self.position = self.base_position
                 self.being_attacked = False
                 Game().game_mode.gameStateStack[-1].target.hide()
+                Game().game_mode.gameStateStack.append(DefendingState())
 
     def hit(self, damage):
         self.being_attacked = True
@@ -339,6 +355,16 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
     def rotate(self, angle):
         self.rotation += angle
 
+    # a function to detect collision with the battle_box boundaries, or with an object in self.objects that has a collision box
+    # and adjust the player's position accordingly
+    def check_collision(self):
+        battle_rect = self.game.game_mode.battle_box.get_internal_rect()
+        # check if the player is colliding with the battle_box boundary
+        self.rect.left = max(self.rect.left, battle_rect.left)
+        self.rect.right = min(self.rect.right, battle_rect.right)
+        self.rect.top = max(self.rect.top, battle_rect.top)
+        self.rect.bottom = min(self.rect.bottom, battle_rect.bottom)
+
     def update(self):
         if self.game.keys_pressed[pygame.K_UP]:
             self.move(0, -1)
@@ -352,6 +378,7 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
             self.rotate(-5)
         if self.game.keys_pressed[pygame.K_e]:
             self.rotate(5)
+        self.check_collision()
 
     def render(self, surface):
         rotated = pygame.transform.rotate(self.image, self.rotation)
@@ -454,7 +481,7 @@ class TargetUI(GUIElement):
         pass
 
     def get_hit_power(self):
-        return abs(self.cursor_pos - self.rect.centerx) / float(self.rect.width // 2) * self.enemy_max_health
+        return (1 - abs(self.cursor_pos - self.rect.centerx) / float(self.rect.width // 2)) * (self.enemy_max_health / 8)
 
     def update(self):
         if self.active:
