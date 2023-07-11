@@ -220,6 +220,23 @@ class DefendingState(BattleState):
         return True
     
 
+class BattleObject:
+    def __init__(self, sprite, position=(0, 0), rotation=0):
+        self.sprite = sprite
+        self.position = position
+        self.rotation = rotation
+        self.mask = pygame.mask.from_surface(self.sprite)
+
+    def update(self):
+        # Update the mask after rotating the image
+        self.mask = pygame.mask.from_surface(pygame.transform.rotate(self.sprite, self.rotation))
+
+    def collides_with(self, other):
+        # Calculate the offset between the two objects
+        offset = (other.position[0] - self.position[0], other.position[1] - self.position[1])
+
+        # Check if the masks overlap
+        return self.mask.overlap(other.mask, offset) is not None
 
 class Enemy:
     def __init__(self, sprite, name="TestMon", position=(0, 0), rotation=0, health=20):
@@ -237,6 +254,10 @@ class Enemy:
         self.being_attacked = False
         self.hit_visual = HitVisual(5, Game().game_mode.hit_visual)
         self.healthbar_ticks = 0
+        rect = self.get_rect()
+        self.health_bar_width = 200
+        self.health_bar_height = 15
+        self.health_bar_position = (rect.centerx - self.health_bar_width / 2, rect.y - self.health_bar_height - 5)
 
     def get_rect(self):
         width, height = self.sprite.get_size()
@@ -293,25 +314,21 @@ class Enemy:
         pass
 
     def draw_health_bar(self, surface):
-        rect = self.get_rect()
-        health_bar_width = 150
-        health_bar_height = 10
-        health_bar_x = rect.centerx - health_bar_width / 2
-        health_bar_y = rect.y - 10
-
+        health_bar_x = self.health_bar_position[0]
+        health_bar_y = self.health_bar_position[1]
         max_health_bar_color = (255, 0, 0)
         current_health_bar_color = (0, 255, 0)
 
-        max_health_width = health_bar_width
-        current_health_width = (self.health / self.max_health) * health_bar_width
+        max_health_width = self.health_bar_width
+        current_health_width = (self.health / self.max_health) * self.health_bar_width
 
         # Draw the red background representing the maximum health
         pygame.draw.rect(surface, max_health_bar_color,
-                        (health_bar_x, health_bar_y, max_health_width, health_bar_height))
+                        (health_bar_x, health_bar_y, max_health_width, self.health_bar_height))
 
         # Draw the green foreground representing the current health
         pygame.draw.rect(surface, current_health_bar_color,
-                        (health_bar_x, health_bar_y, current_health_width, health_bar_height))
+                        (health_bar_x, health_bar_y, current_health_width, self.health_bar_height))
 
 
     def process_input(self, event):
@@ -324,8 +341,8 @@ class Enemy:
 class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
     def __init__(self, x=0, y=0, color=(255, 0, 0)):
         super().__init__()
-        self.image = pygame.image.load(resource_path("assets/battle/soul/soul.png"))
-        self.rect = self.image.get_rect()
+        self.sprite = pygame.image.load(resource_path("assets/battle/soul/soul.png"))
+        self.rect = self.sprite.get_rect()
         self.rect.x = x
         self.rect.y = y
         self.rotation = 0
@@ -334,12 +351,12 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
         self.set_color(color)
 
     def set_color(self, color):
-        new_surface = pygame.Surface(self.image.get_size())
+        new_surface = pygame.Surface(self.sprite.get_size())
         new_surface.fill(color)
         new_surface.set_colorkey((0, 0, 0))
-        new_surface.set_alpha(self.image.get_alpha())
-        new_surface.blit(self.image, (0, 0), None, pygame.BLEND_RGBA_MULT)
-        self.image = new_surface.convert_alpha()
+        new_surface.set_alpha(self.sprite.get_alpha())
+        new_surface.blit(self.sprite, (0, 0), None, pygame.BLEND_RGBA_MULT)
+        self.sprite = new_surface.convert_alpha()
 
     def set_position(self, x, y):
         self.rect.x = x
@@ -381,7 +398,7 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
         self.check_collision()
 
     def render(self, surface):
-        rotated = pygame.transform.rotate(self.image, self.rotation)
+        rotated = pygame.transform.rotate(self.sprite, self.rotation)
         rotated_rect = rotated.get_rect(center=self.rect.center)
         surface.blit(rotated, rotated_rect)
 

@@ -41,7 +41,7 @@ class PapyrusBattle(Battle):
 class PapyrusEnemy(Enemy):
     def __init__(self):
         image = pygame.image.load("examples/assets/papyrus.png")
-        super(PapyrusEnemy, self).__init__(image, position=(250, 20), name="Papyrus", health=100)
+        super(PapyrusEnemy, self).__init__(image, position=(250, 40), name="Papyrus", health=100)
 
     def update(self, surface):
         super(PapyrusEnemy, self).update(surface)
