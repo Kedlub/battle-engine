@@ -1,6 +1,8 @@
-from modules.battle import Battle, Enemy
+import random
+from modules.battle import Battle, Enemy, BattleObject, Round
 import pygame
 
+from modules.game import Game
 from modules.util import InterpolationManager, Interpolation
 from modules.constants import WIDTH, HEIGHT
 
@@ -10,6 +12,9 @@ class PapyrusBattle(Battle):
     def __init__(self):
         super(PapyrusBattle, self).__init__()
         self.tick = 0
+
+    def select_next_round(self):
+        return TestRound(self)
 
     def post_init(self):
         self.enemies = [PapyrusEnemy()]
@@ -28,7 +33,7 @@ class PapyrusBattle(Battle):
     def update(self, surface):
         super(PapyrusBattle, self).update(surface)
         self.tick += 1
-        if self.tick == 200:
+        if self.tick == 50:
             InterpolationManager().add_interpolation(
                 Interpolation(self.player_stats.player, "max_health", self.player_stats.player.max_health, 192, 3000,
                               Interpolation.EASE_OUT))
@@ -53,3 +58,38 @@ class PapyrusEnemy(Enemy):
 
     def process_input(self, event):
         pass
+
+
+class TestBone(BattleObject):
+    def __init__(self, position=(0, 0), rotation=0):
+        sprite = pygame.Surface((10, 60))
+        sprite.fill((255, 255, 255))
+        damage = 10
+        super(TestBone, self).__init__(sprite, position, rotation, damage)
+
+    def update(self):
+        self.position = [int(self.position[0] - (50 * (Game().delta_time / 1000))), int(self.position[1])]
+        super(TestBone, self).update()
+        
+    def render(self, surface):
+        surface.blit(self.sprite, self.position)
+
+class TestRound(Round):
+    def __init__(self, battle):
+        super(TestRound, self).__init__(battle)
+        self.last_spawn_time = 0
+
+    def round_update(self):
+        # spawn bone every approximately 1.5 seconds, as it uses delta time
+        if self.time - self.last_spawn_time >= 1500:
+            battle_rect = self.battle.battle_box.get_internal_rect()
+            # randomly choose if it will be an upper bone or a lower bone, by selecting but battle_rect.y or battle_rect.y + battle_rect.height
+            if random.randint(0, 1) == 0:
+                bone = TestBone((battle_rect.x + battle_rect.width, battle_rect.y))
+            else:
+                bone = TestBone((battle_rect.x + battle_rect.width, battle_rect.y + battle_rect.height / 2))
+            self.add_object(bone)
+            self.last_spawn_time = self.time
+        if self.time >= 10000:
+            # Action to end the turn
+            self.end_turn()

@@ -26,11 +26,11 @@ class BattleState:
 
 
 class Battle(GameMode):
-    def __init__(self, game=Game(), init_default=True):
+    def __init__(self, game=Game()):
         super().__init__(game)
         self.button_data = []
         self.buttons = []
-        self.rounds = []
+        self.current_round = None
         self.enemies = []
         self.gameStateStack = [ButtonSelectState()]
         self.selected_button = 0
@@ -56,6 +56,10 @@ class Battle(GameMode):
     def calculate_spacing(self, num_of_buttons, screen_width):
         button_space_evenly = (screen_width - num_of_buttons * Button.default_width) / (num_of_buttons + 1)
         return button_space_evenly
+    
+    def select_next_round(self):
+        # Needs to be implemented by the actual battle
+        pass
 
     def attack_enemy(self, enemy):
         if enemy in self.enemies:
@@ -130,7 +134,9 @@ class Battle(GameMode):
         # Implement input handling in Battle mode here
         if self.gameStateStack:
             self.gameStateStack[-1].process_input(self, event)
-        pass
+        
+    def add_object(self, obj):
+        self.objects.append(obj)
 
 
 class ButtonSelectState(BattleState):
@@ -195,6 +201,7 @@ class TargetState(BattleState):
     def process_input(self, battle, event):
         if event.type == pygame.KEYDOWN:
             if event.key in CONFIRM_BUTTON and self.target.active:
+                battle.current_round = battle.select_next_round()
                 self.target.active = False
                 power = self.target.get_hit_power()
                 self.enemy.hit(power)
@@ -205,31 +212,83 @@ class TargetState(BattleState):
     def show_soul(self):
         return False
 
+
 class DefendingState(BattleState):
+    def __init__(self):
+        super().__init__()
+        self.current_round = Game().game_mode.current_round
+
     def render(self, battle, surface):
         # TODO: Implement defending state rendering, maybe none is needed? We have the battle.objects list, which can contain the projectiles
-        pass
+        # Probably should implement it anyways, just in case
+        self.current_round.render(surface)
 
     def process_input(self, battle, event):
-        pass
+        self.current_round.process_input(event)
 
     def update(self, battle):
+        if not self.current_round.active:
+            battle.gameStateStack.pop()
+            battle.gameStateStack.append(ButtonSelectState())
+            return
         battle.player_object.update()
+        self.current_round.update()
 
     def show_soul(self):
         return True
-    
+
+
+class Round:
+    def __init__(self, battle):
+        self.objects = []
+        self.time = 0
+        self.active = True
+        self.battle = battle
+
+    # called on the actual activation of round
+    def start(self):
+        pass
+
+    def render(self, surface):
+        for obj in self.objects:
+            obj.render(surface)
+
+    def update(self):
+        self.time += Game().delta_time
+        self.round_update()
+        self.objects = [obj for obj in self.objects if not obj.destroyed]
+        for obj in self.objects:
+            obj.update()
+
+    # function for custom round update logic, normal update is reserved
+    def round_update(self):
+        pass
+
+    def process_input(self, event):
+        pass
+
+    def add_object(self, obj):
+        self.objects.append(obj)
+
+    def end_turn(self):
+        self.active = False
+
 
 class BattleObject:
-    def __init__(self, sprite, position=(0, 0), rotation=0):
+    def __init__(self, sprite, position=(0, 0), rotation=0, damage=1):
         self.sprite = sprite
         self.position = position
         self.rotation = rotation
         self.mask = pygame.mask.from_surface(self.sprite)
+        self.damage = damage
+        self.destroyed = False
 
     def update(self):
         # Update the mask after rotating the image
         self.mask = pygame.mask.from_surface(pygame.transform.rotate(self.sprite, self.rotation))
+
+    def render(self, surface):
+        pass
 
     def collides_with(self, other):
         # Calculate the offset between the two objects
@@ -237,6 +296,7 @@ class BattleObject:
 
         # Check if the masks overlap
         return self.mask.overlap(other.mask, offset) is not None
+
 
 class Enemy:
     def __init__(self, sprite, name="TestMon", position=(0, 0), rotation=0, health=20):
@@ -277,6 +337,8 @@ class Enemy:
                 # Subtract the hit power from the enemy's health
                 # Alternatively, this might be done based on the outcome of the shake animation
                 self.health -= self.hit_power
+                InterpolationManager().add_interpolation(
+                    Interpolation(self, "current_health", self.current_health, self.health, 1000))
                 self.healthbar_ticks = 100
             elif self.hit_visual.active:
                 # Update the hit_visual
@@ -320,16 +382,15 @@ class Enemy:
         current_health_bar_color = (0, 255, 0)
 
         max_health_width = self.health_bar_width
-        current_health_width = (self.health / self.max_health) * self.health_bar_width
+        current_health_width = (self.current_health / self.max_health) * self.health_bar_width
 
         # Draw the red background representing the maximum health
         pygame.draw.rect(surface, max_health_bar_color,
-                        (health_bar_x, health_bar_y, max_health_width, self.health_bar_height))
+                         (health_bar_x, health_bar_y, max_health_width, self.health_bar_height))
 
         # Draw the green foreground representing the current health
         pygame.draw.rect(surface, current_health_bar_color,
-                        (health_bar_x, health_bar_y, current_health_width, self.health_bar_height))
-
+                         (health_bar_x, health_bar_y, current_health_width, self.health_bar_height))
 
     def process_input(self, event):
         pass
@@ -349,6 +410,7 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
         self.speed = 5
         self.game = Game()
         self.set_color(color)
+        self.mask = pygame.mask.from_surface(self.sprite)
 
     def set_color(self, color):
         new_surface = pygame.Surface(self.sprite.get_size())
@@ -395,6 +457,8 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
             self.rotate(-5)
         if self.game.keys_pressed[pygame.K_e]:
             self.rotate(5)
+        rotated = pygame.transform.rotate(self.sprite, self.rotation)
+        self.mask = pygame.mask.from_surface(rotated)
         self.check_collision()
 
     def render(self, surface):
@@ -498,7 +562,8 @@ class TargetUI(GUIElement):
         pass
 
     def get_hit_power(self):
-        return (1 - abs(self.cursor_pos - self.rect.centerx) / float(self.rect.width // 2)) * (self.enemy_max_health / 8)
+        return (1 - abs(self.cursor_pos - self.rect.centerx) / float(self.rect.width // 2)) * (
+                self.enemy_max_health / 8)
 
     def update(self):
         if self.active:
