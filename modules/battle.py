@@ -559,9 +559,9 @@ class HitVisual(GUIElement):
 class TargetUI(GUIElement):
     def __init__(self, battle_box, enemy_max_health):
         super().__init__()
-        bg_sprite = pygame.image.load(resource_path("assets/battle/target/target.png"))
-        aim_sprite1 = pygame.image.load(resource_path("assets/battle/target/target_aim1.png"))
-        aim_sprite2 = pygame.image.load(resource_path("assets/battle/target/target_aim2.png"))
+        bg_sprite = pygame.image.load(resource_path("assets/battle/target_ui/target.png"))
+        aim_sprite1 = pygame.image.load(resource_path("assets/battle/target_ui/target_aim1.png"))
+        aim_sprite2 = pygame.image.load(resource_path("assets/battle/target_ui/target_aim2.png"))
         self.background = bg_sprite
         self.aim_cursor = [aim_sprite1, aim_sprite2]
         self.direction = random.choice([-1, 1])
