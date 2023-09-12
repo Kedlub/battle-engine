@@ -154,13 +154,21 @@ class ButtonSelectState(BattleState):
             elif event.key == pygame.K_RIGHT:
                 battle.select_button(battle.selected_button + 1)
             elif event.key in CONFIRM_BUTTON:
+                # hardcoded button for now, will be made using callbacks later
                 # confirm the selection
-                menu = Menu()
-                for enemy in battle.enemies:
-                    item = MenuItem(enemy.name)
-                    item.action = lambda: battle.attack_enemy(enemy)
-                    menu.add_item(item)
-                battle.gameStateStack.append(MenuSelectState(menu))
+                if battle.selected_button == 0:
+                    menu = Menu()
+                    for enemy in battle.enemies:
+                        item = MenuItem(enemy.name)
+                        item.action = lambda: battle.attack_enemy(enemy)
+                        menu.add_item(item)
+                    battle.gameStateStack.append(MenuSelectState(menu))
+                elif battle.selected_button == 1:
+                    battle.battle_box.set_encounter_text("You tried to talk to the enemy, but it didn't seem to understand.")
+                elif battle.selected_button == 2:
+                    battle.battle_box.set_encounter_text("You don't have any items.")
+                elif battle.selected_button == 3:
+                    battle.battle_box.set_encounter_text("You tried to spare the enemy, but it didn't seem to understand.")
 
 
 class MenuSelectState(BattleState):
@@ -272,6 +280,7 @@ class Round:
 
     def end_turn(self):
         self.active = False
+        Game().game_mode.player_stats.player.invulnerability_time = 0
 
 
 class BattleObject:
@@ -282,17 +291,22 @@ class BattleObject:
         self.mask = pygame.mask.from_surface(self.sprite)
         self.damage = damage
         self.destroyed = False
+        self.player_stats = Game().game_mode.player_stats
 
     def update(self):
         # Update the mask after rotating the image
         self.mask = pygame.mask.from_surface(pygame.transform.rotate(self.sprite, self.rotation))
+        if self.player_stats.player.invulnerability_time <= 0 and self.collides_with(Game().game_mode.player_object):
+            self.player_stats.player.health -= self.damage
+            self.player_stats.player.invulnerability_time = 1000
+            Game().shake(20)
 
     def render(self, surface):
         pass
 
     def collides_with(self, other):
         # Calculate the offset between the two objects
-        offset = (other.position[0] - self.position[0], other.position[1] - self.position[1])
+        offset = (other.rect.x - self.position[0], other.rect.y - self.position[1])
 
         # Check if the masks overlap
         return self.mask.overlap(other.mask, offset) is not None
@@ -409,6 +423,7 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
         self.rotation = 0
         self.speed = 5
         self.game = Game()
+        self.player = Player()
         self.set_color(color)
         self.mask = pygame.mask.from_surface(self.sprite)
 
@@ -445,6 +460,8 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
         self.rect.bottom = min(self.rect.bottom, battle_rect.bottom)
 
     def update(self):
+        if self.player.invulnerability_time > 0:
+            self.player.invulnerability_time -= self.game.delta_time
         if self.game.keys_pressed[pygame.K_UP]:
             self.move(0, -1)
         if self.game.keys_pressed[pygame.K_LEFT]:
@@ -462,6 +479,11 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
         self.check_collision()
 
     def render(self, surface):
+        # if player invulnerability time is not 0, draw the player with 50% alpha
+        if self.player.invulnerability_time > 0:
+            self.sprite.set_alpha(128)
+        else:
+            self.sprite.set_alpha(255)
         rotated = pygame.transform.rotate(self.sprite, self.rotation)
         rotated_rect = rotated.get_rect(center=self.rect.center)
         surface.blit(rotated, rotated_rect)
@@ -550,7 +572,7 @@ class TargetUI(GUIElement):
         self.show_cursor = True
         self.active = False
         self.frame_counter = 0
-        self.speed = 5
+        self.speed = 10
         self.alpha = 255
         self.enemy_max_health = enemy_max_health
         self.hide_interpolation = Interpolation(self, "alpha", 255, 0, 3000, Interpolation.LINEAR)

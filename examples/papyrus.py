@@ -68,7 +68,7 @@ class TestBone(BattleObject):
         super(TestBone, self).__init__(sprite, position, rotation, damage)
 
     def update(self):
-        self.position = [int(self.position[0] - (50 * (Game().delta_time / 1000))), int(self.position[1])]
+        self.position = [int(self.position[0] - (150 * (Game().delta_time / 1000))), int(self.position[1])]
         super(TestBone, self).update()
         
     def render(self, surface):
@@ -81,7 +81,7 @@ class TestRound(Round):
 
     def round_update(self):
         # spawn bone every approximately 1.5 seconds, as it uses delta time
-        if self.time - self.last_spawn_time >= 1500:
+        if self.time - self.last_spawn_time >= 500:
             battle_rect = self.battle.battle_box.get_internal_rect()
             # randomly choose if it will be an upper bone or a lower bone, by selecting but battle_rect.y or battle_rect.y + battle_rect.height
             if random.randint(0, 1) == 0:
@@ -90,6 +90,7 @@ class TestRound(Round):
                 bone = TestBone((battle_rect.x + battle_rect.width, battle_rect.y + battle_rect.height / 2))
             self.add_object(bone)
             self.last_spawn_time = self.time
-        if self.time >= 10000:
+        if self.time >= 7000:
             # Action to end the turn
+            self.battle.battle_box.set_encounter_text("A lot of low quality bones fill the room.")
             self.end_turn()
