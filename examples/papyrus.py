@@ -1,5 +1,5 @@
 import random
-from modules.battle import Battle, Enemy, BattleObject, Round
+from modules.battle import Battle, Enemy, BattleObject, Round, MenuItem
 import pygame
 
 from modules.game import Game
@@ -47,6 +47,12 @@ class PapyrusEnemy(Enemy):
     def __init__(self):
         image = pygame.image.load("examples/assets/papyrus.png")
         super(PapyrusEnemy, self).__init__(image, position=(250, 40), name="Papyrus", health=100)
+        self.acts = [MenuItem("Wave", self.wave)]
+        self.battle = Battle()
+
+    def wave(self):
+        self.battle.battle_box.set_encounter_text("You wave at Papyrus. He waves back.")
+        self.battle.end_round()
 
     def update(self, surface):
         super(PapyrusEnemy, self).update(surface)

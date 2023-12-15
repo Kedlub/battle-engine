@@ -1,3 +1,5 @@
+from typing import List
+
 import pygame
 import enum
 import random
@@ -26,6 +28,8 @@ class BattleState:
 
 
 class Battle(GameMode):
+    gameStateStack: list[BattleState]
+
     def __init__(self, game=Game()):
         super().__init__(game)
         self.button_data = []
@@ -137,6 +141,11 @@ class Battle(GameMode):
         
     def add_object(self, obj):
         self.objects.append(obj)
+        
+    def end_round(self):
+        if not self.current_round:
+            self.current_round = self.select_next_round()
+        self.gameStateStack.append(DefendingState())
 
 
 class ButtonSelectState(BattleState):
@@ -164,12 +173,36 @@ class ButtonSelectState(BattleState):
                         menu.add_item(item)
                     battle.gameStateStack.append(MenuSelectState(menu))
                 elif battle.selected_button == 1:
-                    battle.battle_box.set_encounter_text("You tried to talk to the enemy, but it didn't seem to understand.")
+                    # act menu should list all enemies and their acts
+                    menu = Menu()
+                    for enemy in battle.enemies:
+                        submenu = Menu()
+                        for act in enemy.acts:
+                            submenu.add_item(act)
+                        item = MenuItem(enemy.name)
+                        item.action = lambda: battle.gameStateStack.append(MenuSelectState(submenu))
+                        menu.add_item(item)
+                    battle.gameStateStack.append(MenuSelectState(menu))
                 elif battle.selected_button == 2:
                     battle.battle_box.set_encounter_text("You don't have any items.")
                 elif battle.selected_button == 3:
                     battle.battle_box.set_encounter_text("You tried to spare the enemy, but it didn't seem to understand.")
 
+# Dialog state is a state which is made for a longer multistep dialogue, which the player advances by pressing the confirm button
+# It takes a list of Dialog objects, which define the text and where should it be shown
+class DialogState(BattleState):
+    def __init__(self, dialog):
+        pass
+
+# Dialog contains information about a dialog's type, position, size and content
+# Type can be bubble or battle box
+# If type is battle box, position and size are irrelevant
+class Dialog():
+    def __init__(self, type, position, size, content):
+        self.type = type
+        self.position = position
+        self.size = size
+        self.content = content
 
 class MenuSelectState(BattleState):
     def __init__(self, menu):
