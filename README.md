@@ -3,7 +3,7 @@
 A work-in-progress pygame based engine for creating your own Undertale-inspired battles.
 
 ## Requirements
-This project uses the `pipenv` virtualenv manager, so requirements can be installed by `pipenv install`
+This project uses the `poetry` dependency manager, so requirements can be installed by `poetry install`
 
 ## Usage
 Battles are create by extending the `Battle` class, and then sending it as a game mode to `Game`
