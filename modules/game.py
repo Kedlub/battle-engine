@@ -1,10 +1,13 @@
 import pygame
 import sys
 import random
+import os
 from pygame._sdl2 import Window
 from modules.util import Singleton, InterpolationManager
 
 DESIGN_RESOLUTION = (640, 480)
+
+os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 
 # GameMode is an abstract class that represents the game state and processes necessary game actions such as 
@@ -118,7 +121,7 @@ class Game(metaclass=Singleton):
         if self.fullscreen:
             self.screen = pygame.display.set_mode((640, 480))
         else:
-            self.screen = pygame.display.set_mode(self.native_resolution, pygame.FULLSCREEN)
+            self.screen = pygame.display.set_mode(self.native_resolution, pygame.NOFRAME)
         self.fullscreen = not self.fullscreen
 
     def set_mode(self, mode):
