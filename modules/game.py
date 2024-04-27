@@ -1,19 +1,22 @@
-import pygame
-import sys
-import random
 import os
+import random
+import sys
+
+import pygame
 from pygame._sdl2 import Window
-from modules.util import Singleton, InterpolationManager
+
+from modules.util import InterpolationManager, Singleton
 
 DESIGN_RESOLUTION = (640, 480)
+BORDERLESS = os.name == "nt"
 
-os.environ['SDL_VIDEO_CENTERED'] = '1'
+os.environ["SDL_VIDEO_CENTERED"] = "1"
 
 
-# GameMode is an abstract class that represents the game state and processes necessary game actions such as 
+# GameMode is an abstract class that represents the game state and processes necessary game actions such as
 # rendering, updating, and handling input events.
 class GameMode:
-    # Do basic variable initialization here, but leave 
+    # Do basic variable initialization here, but leave
     def __init__(self, game):
         self.game = game
         pass
@@ -36,10 +39,14 @@ class Game(metaclass=Singleton):
         pygame.init()
         screen_info = pygame.display.Info()
         self.native_resolution = (screen_info.current_w, screen_info.current_h)
-        scaling_factor = min(self.native_resolution[0] / DESIGN_RESOLUTION[0],
-                             self.native_resolution[1] / DESIGN_RESOLUTION[1])
+        scaling_factor = min(
+            self.native_resolution[0] / DESIGN_RESOLUTION[0],
+            self.native_resolution[1] / DESIGN_RESOLUTION[1],
+        )
         self.scaled_resolution = (
-            int(DESIGN_RESOLUTION[0] * scaling_factor), int(DESIGN_RESOLUTION[1] * scaling_factor))
+            int(DESIGN_RESOLUTION[0] * scaling_factor),
+            int(DESIGN_RESOLUTION[1] * scaling_factor),
+        )
         self.screen = pygame.display.set_mode((640, 480))
         self.surface = pygame.Surface((640, 480))
         pygame.display.set_caption("battle-engine")
@@ -73,8 +80,10 @@ class Game(metaclass=Singleton):
                 else:
                     factor = 1
                 random_position = (
-                    self.original_position[0] + random.randint(int(-5 * factor), int(5 * factor)),
-                    self.original_position[1] + random.randint(int(-5 * factor), int(5 * factor))
+                    self.original_position[0]
+                    + random.randint(int(-5 * factor), int(5 * factor)),
+                    self.original_position[1]
+                    + random.randint(int(-5 * factor), int(5 * factor)),
                 )
                 self.window.position = random_position
                 self.shaking_ticks -= 1
@@ -103,9 +112,13 @@ class Game(metaclass=Singleton):
             self.shaking_ticks -= 1
 
         if self.fullscreen:
-            scaled_position = ((self.native_resolution[0] - self.scaled_resolution[0]) // 2,
-                               (self.native_resolution[1] - self.scaled_resolution[1]) // 2)
-            scaled = pygame.transform.scale(self.surface, (self.scaled_resolution[0], self.scaled_resolution[1]))
+            scaled_position = (
+                (self.native_resolution[0] - self.scaled_resolution[0]) // 2,
+                (self.native_resolution[1] - self.scaled_resolution[1]) // 2,
+            )
+            scaled = pygame.transform.scale(
+                self.surface, (self.scaled_resolution[0], self.scaled_resolution[1])
+            )
         else:
             scaled_position = (0, 0)
             scaled = self.surface
@@ -121,7 +134,10 @@ class Game(metaclass=Singleton):
         if self.fullscreen:
             self.screen = pygame.display.set_mode((640, 480))
         else:
-            self.screen = pygame.display.set_mode(self.native_resolution, pygame.NOFRAME)
+            self.screen = pygame.display.set_mode(
+                self.native_resolution,
+                pygame.NOFRAME if BORDERLESS else pygame.FULLSCREEN,
+            )
         self.fullscreen = not self.fullscreen
 
     def set_mode(self, mode):

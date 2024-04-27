@@ -9,8 +9,16 @@ import math
 from modules.constants import CONFIRM_BUTTON, DISMISS_BUTTON, WIDTH
 from modules.game import GameMode, Game
 from modules.player import Player
-from modules.util import resource_path, draw_gradient, draw_text, ProgressiveText, Singleton, draw_text_size, \
-    InterpolationManager, Interpolation
+from modules.util import (
+    resource_path,
+    draw_gradient,
+    draw_text,
+    ProgressiveText,
+    Singleton,
+    draw_text_size,
+    InterpolationManager,
+    Interpolation,
+)
 
 
 class BattleState:
@@ -38,10 +46,14 @@ class Battle(GameMode):
         self.enemies = []
         self.gameStateStack = [ButtonSelectState()]
         self.selected_button = 0
-        self.player_stats = PlayerStats(Player(name="Chara", level=19, health=90, max_health=92),
-                                        (40, game.surface.get_height() - 80))
+        self.player_stats = PlayerStats(
+            Player(name="Chara", level=19, health=90, max_health=92),
+            (40, game.surface.get_height() - 80),
+        )
         self.player_object = PlayerObject(50, 50, (255, 0, 0))
-        self.battle_box = BattleBox(position=(33, game.surface.get_height() / 2 + 9), width=575, height=140)
+        self.battle_box = BattleBox(
+            position=(33, game.surface.get_height() / 2 + 9), width=575, height=140
+        )
         battle_rect = self.battle_box.get_internal_rect()
         self.add_default_buttons()
         self.hit_visual = HitVisual.load_frames("assets/battle/hit/knife")
@@ -51,16 +63,26 @@ class Battle(GameMode):
         pass
 
     def add_default_buttons(self):
-        self.add_button("assets/battle/button/fight0.png", "assets/battle/button/fight1.png")
-        self.add_button("assets/battle/button/act0.png", "assets/battle/button/act1.png")
-        self.add_button("assets/battle/button/item0.png", "assets/battle/button/item1.png")
-        self.add_button("assets/battle/button/mercy0.png", "assets/battle/button/mercy1.png")
+        self.add_button(
+            "assets/battle/button/fight0.png", "assets/battle/button/fight1.png"
+        )
+        self.add_button(
+            "assets/battle/button/act0.png", "assets/battle/button/act1.png"
+        )
+        self.add_button(
+            "assets/battle/button/item0.png", "assets/battle/button/item1.png"
+        )
+        self.add_button(
+            "assets/battle/button/mercy0.png", "assets/battle/button/mercy1.png"
+        )
         self.create_buttons()
 
     def calculate_spacing(self, num_of_buttons, screen_width):
-        button_space_evenly = (screen_width - num_of_buttons * Button.default_width) / (num_of_buttons + 1)
+        button_space_evenly = (screen_width - num_of_buttons * Button.default_width) / (
+            num_of_buttons + 1
+        )
         return button_space_evenly
-    
+
     def select_next_round(self):
         # Needs to be implemented by the actual battle
         pass
@@ -75,7 +97,9 @@ class Battle(GameMode):
         pass
 
     def add_button(self, inactive_texture, active_texture):
-        self.button_data.append({"inactive": inactive_texture, "active": active_texture})
+        self.button_data.append(
+            {"inactive": inactive_texture, "active": active_texture}
+        )
 
     def create_buttons(self):
         screen_width = self.game.surface.get_width()
@@ -138,10 +162,10 @@ class Battle(GameMode):
         # Implement input handling in Battle mode here
         if self.gameStateStack:
             self.gameStateStack[-1].process_input(self, event)
-        
+
     def add_object(self, obj):
         self.objects.append(obj)
-        
+
     def end_round(self):
         if not self.current_round:
             self.current_round = self.select_next_round()
@@ -180,13 +204,18 @@ class ButtonSelectState(BattleState):
                         for act in enemy.acts:
                             submenu.add_item(act)
                         item = MenuItem(enemy.name)
-                        item.action = lambda: battle.gameStateStack.append(MenuSelectState(submenu))
+                        item.action = lambda: battle.gameStateStack.append(
+                            MenuSelectState(submenu)
+                        )
                         menu.add_item(item)
                     battle.gameStateStack.append(MenuSelectState(menu))
                 elif battle.selected_button == 2:
                     battle.battle_box.set_encounter_text("You don't have any items.")
                 elif battle.selected_button == 3:
-                    battle.battle_box.set_encounter_text("You tried to spare the enemy, but it didn't seem to understand.")
+                    battle.battle_box.set_encounter_text(
+                        "You tried to spare the enemy, but it didn't seem to understand."
+                    )
+
 
 # Dialog state is a state which is made for a longer multistep dialogue, which the player advances by pressing the confirm button
 # It takes a list of Dialog objects, which define the text and where should it be shown
@@ -194,20 +223,27 @@ class DialogState(BattleState):
     def __init__(self, dialog):
         pass
 
+
 # Dialog contains information about a dialog's type, position, size and content
 # Type can be bubble or battle box
 # If type is battle box, position and size are irrelevant
-class Dialog():
+class Dialog:
     def __init__(self, type, position, size, content):
         self.type = type
         self.position = position
         self.size = size
         self.content = content
 
+
 class MenuSelectState(BattleState):
     def __init__(self, menu):
         battle_rect = Game().game_mode.battle_box.get_internal_rect()
-        self.menu = MenuContainer(x=battle_rect.x, y=battle_rect.y, width=battle_rect.width, height=battle_rect.height)
+        self.menu = MenuContainer(
+            x=battle_rect.x,
+            y=battle_rect.y,
+            width=battle_rect.width,
+            height=battle_rect.height,
+        )
         self.menu.set_menu(menu)
 
     def render(self, battle, surface):
@@ -328,8 +364,12 @@ class BattleObject:
 
     def update(self):
         # Update the mask after rotating the image
-        self.mask = pygame.mask.from_surface(pygame.transform.rotate(self.sprite, self.rotation))
-        if self.player_stats.player.invulnerability_time <= 0 and self.collides_with(Game().game_mode.player_object):
+        self.mask = pygame.mask.from_surface(
+            pygame.transform.rotate(self.sprite, self.rotation)
+        )
+        if self.player_stats.player.invulnerability_time <= 0 and self.collides_with(
+            Game().game_mode.player_object
+        ):
             self.player_stats.player.health -= self.damage
             self.player_stats.player.invulnerability_time = 1000
             Game().shake(20)
@@ -364,7 +404,10 @@ class Enemy:
         rect = self.get_rect()
         self.health_bar_width = 200
         self.health_bar_height = 15
-        self.health_bar_position = (rect.centerx - self.health_bar_width / 2, rect.y - self.health_bar_height - 5)
+        self.health_bar_position = (
+            rect.centerx - self.health_bar_width / 2,
+            rect.y - self.health_bar_height - 5,
+        )
 
     def get_rect(self):
         width, height = self.sprite.get_size()
@@ -385,7 +428,10 @@ class Enemy:
                 # Alternatively, this might be done based on the outcome of the shake animation
                 self.health -= self.hit_power
                 InterpolationManager().add_interpolation(
-                    Interpolation(self, "current_health", self.current_health, self.health, 1000))
+                    Interpolation(
+                        self, "current_health", self.current_health, self.health, 1000
+                    )
+                )
                 self.healthbar_ticks = 100
             elif self.hit_visual.active:
                 # Update the hit_visual
@@ -397,7 +443,10 @@ class Enemy:
             if self.shake_ticks % self.shake_speed == 0:
                 sign = 1 if (self.shake_ticks / self.shake_speed) % 2 == 0 else -1
                 shake_offset = sign * self.shake_dist
-                self.position = (self.base_position[0] + shake_offset, self.base_position[1])
+                self.position = (
+                    self.base_position[0] + shake_offset,
+                    self.base_position[1],
+                )
                 self.shake_dist *= 0.9
             if self.shake_ticks == 0:
                 self.shake_dist = 0
@@ -429,15 +478,23 @@ class Enemy:
         current_health_bar_color = (0, 255, 0)
 
         max_health_width = self.health_bar_width
-        current_health_width = (self.current_health / self.max_health) * self.health_bar_width
+        current_health_width = (
+            self.current_health / self.max_health
+        ) * self.health_bar_width
 
         # Draw the red background representing the maximum health
-        pygame.draw.rect(surface, max_health_bar_color,
-                         (health_bar_x, health_bar_y, max_health_width, self.health_bar_height))
+        pygame.draw.rect(
+            surface,
+            max_health_bar_color,
+            (health_bar_x, health_bar_y, max_health_width, self.health_bar_height),
+        )
 
         # Draw the green foreground representing the current health
-        pygame.draw.rect(surface, current_health_bar_color,
-                         (health_bar_x, health_bar_y, current_health_width, self.health_bar_height))
+        pygame.draw.rect(
+            surface,
+            current_health_bar_color,
+            (health_bar_x, health_bar_y, current_health_width, self.health_bar_height),
+        )
 
     def process_input(self, event):
         pass
@@ -543,10 +600,14 @@ class GUIElement:
         self.set_rotation(self.rotation + (target_rotation - self.rotation) * t)
 
     def update(self):
-        raise NotImplementedError("update method should be implemented in derived classes")
+        raise NotImplementedError(
+            "update method should be implemented in derived classes"
+        )
 
     def render(self, screen):
-        raise NotImplementedError("render method should be implemented in derived classes")
+        raise NotImplementedError(
+            "render method should be implemented in derived classes"
+        )
 
 
 class HitVisual(GUIElement):
@@ -592,9 +653,15 @@ class HitVisual(GUIElement):
 class TargetUI(GUIElement):
     def __init__(self, battle_box, enemy_max_health):
         super().__init__()
-        bg_sprite = pygame.image.load(resource_path("assets/battle/target_ui/target.png"))
-        aim_sprite1 = pygame.image.load(resource_path("assets/battle/target_ui/target_aim1.png"))
-        aim_sprite2 = pygame.image.load(resource_path("assets/battle/target_ui/target_aim2.png"))
+        bg_sprite = pygame.image.load(
+            resource_path("assets/battle/target_ui/target.png")
+        )
+        aim_sprite1 = pygame.image.load(
+            resource_path("assets/battle/target_ui/target_aim1.png")
+        )
+        aim_sprite2 = pygame.image.load(
+            resource_path("assets/battle/target_ui/target_aim2.png")
+        )
         self.background = bg_sprite
         self.aim_cursor = [aim_sprite1, aim_sprite2]
         self.direction = random.choice([-1, 1])
@@ -608,17 +675,23 @@ class TargetUI(GUIElement):
         self.speed = 10
         self.alpha = 255
         self.enemy_max_health = enemy_max_health
-        self.hide_interpolation = Interpolation(self, "alpha", 255, 0, 3000, Interpolation.LINEAR)
-        self.scale_interpolation = Interpolation(self.rect, "width", self.rect.width, self.rect.width // 5, 3000)
-        self.move_interpolation = Interpolation(self.rect, "x", self.rect.x, self.rect.x + (self.rect.width // 5) * 2,
-                                                3000)
+        self.hide_interpolation = Interpolation(
+            self, "alpha", 255, 0, 3000, Interpolation.LINEAR
+        )
+        self.scale_interpolation = Interpolation(
+            self.rect, "width", self.rect.width, self.rect.width // 5, 3000
+        )
+        self.move_interpolation = Interpolation(
+            self.rect, "x", self.rect.x, self.rect.x + (self.rect.width // 5) * 2, 3000
+        )
 
     def process_event(self, event):
         pass
 
     def get_hit_power(self):
-        return (1 - abs(self.cursor_pos - self.rect.centerx) / float(self.rect.width // 2)) * (
-                self.enemy_max_health / 8)
+        return (
+            1 - abs(self.cursor_pos - self.rect.centerx) / float(self.rect.width // 2)
+        ) * (self.enemy_max_health / 8)
 
     def update(self):
         if self.active:
@@ -628,8 +701,12 @@ class TargetUI(GUIElement):
 
     def render(self, surface):
         if self.shown:
-            self.background.fill((255, 255, 255, self.alpha), special_flags=pygame.BLEND_RGBA_MULT)
-            surface.blit(pygame.transform.scale(self.background, self.rect.size), self.rect)
+            self.background.fill(
+                (255, 255, 255, self.alpha), special_flags=pygame.BLEND_RGBA_MULT
+            )
+            surface.blit(
+                pygame.transform.scale(self.background, self.rect.size), self.rect
+            )
             aim = self.aim_cursor[self.frame_counter // 5]
             aim.fill((255, 255, 255, self.alpha), special_flags=pygame.BLEND_RGBA_MULT)
             if self.show_cursor:
@@ -650,10 +727,15 @@ class TargetUI(GUIElement):
         self.shown = True
         self.show_cursor = True
         self.active = True
-        self.hide_interpolation = Interpolation(self, "alpha", 255, 0, 3000, Interpolation.LINEAR)
-        self.scale_interpolation = Interpolation(self.rect, "width", self.rect.width, self.rect.width // 5, 3000)
-        self.move_interpolation = Interpolation(self.rect, "x", self.rect.x, self.rect.x + (self.rect.width // 5) * 2,
-                                                3000)
+        self.hide_interpolation = Interpolation(
+            self, "alpha", 255, 0, 3000, Interpolation.LINEAR
+        )
+        self.scale_interpolation = Interpolation(
+            self.rect, "width", self.rect.width, self.rect.width // 5, 3000
+        )
+        self.move_interpolation = Interpolation(
+            self.rect, "x", self.rect.x, self.rect.x + (self.rect.width // 5) * 2, 3000
+        )
         pass
 
     def hide(self):
@@ -670,31 +752,61 @@ class PlayerStats(GUIElement):
         self.player = player
         self.width = 570
         self.height = 21
-        self.hp_sprite = pygame.image.load('assets/battle/hp.png')
-        self.karma_sprite = pygame.image.load('assets/battle/karma.png')
+        self.hp_sprite = pygame.image.load("assets/battle/hp.png")
+        self.karma_sprite = pygame.image.load("assets/battle/karma.png")
 
     def render(self, surface):
         y_offset = 6
         # pygame.draw.rect(surface, (0, 120, 120), (self.x, self.y, self.width, self.height))
-        draw_text(surface, self.player.name, 15, (255, 255, 255), self.x, self.y - y_offset,
-                  font_name="hud")
-        draw_text(surface, f"LV {str(self.player.level)}", 15, (255, 255, 255), self.x + 100,
-                  self.y - y_offset, font_name="hud")
+        draw_text(
+            surface,
+            self.player.name,
+            15,
+            (255, 255, 255),
+            self.x,
+            self.y - y_offset,
+            font_name="hud",
+        )
+        draw_text(
+            surface,
+            f"LV {str(self.player.level)}",
+            15,
+            (255, 255, 255),
+            self.x + 100,
+            self.y - y_offset,
+            font_name="hud",
+        )
 
         hp_bar_full = (192, 0, 0)
         hp_bar_current = (255, 255, 0)
 
         base_hpbar_pos = self.x + 250
 
-        surface.blit(self.hp_sprite, (base_hpbar_pos - self.hp_sprite.get_width() - 10, self.y + 5))
+        surface.blit(
+            self.hp_sprite,
+            (base_hpbar_pos - self.hp_sprite.get_width() - 10, self.y + 5),
+        )
 
-        pygame.draw.rect(surface, hp_bar_full,
-                         (base_hpbar_pos, self.y, self.player.max_health, self.height))
-        pygame.draw.rect(surface, hp_bar_current,
-                         (base_hpbar_pos, self.y, self.player.health, self.height))
+        pygame.draw.rect(
+            surface,
+            hp_bar_full,
+            (base_hpbar_pos, self.y, self.player.max_health, self.height),
+        )
+        pygame.draw.rect(
+            surface,
+            hp_bar_current,
+            (base_hpbar_pos, self.y, self.player.health, self.height),
+        )
 
-        draw_text(surface, f"{str(self.player.health)} / {str(self.player.max_health)}", 15, (255, 255, 255),
-                  base_hpbar_pos + self.player.max_health + 10, self.y - y_offset, font_name="hud")
+        draw_text(
+            surface,
+            f"{str(self.player.health)} / {str(self.player.max_health)}",
+            15,
+            (255, 255, 255),
+            base_hpbar_pos + self.player.max_health + 10,
+            self.y - y_offset,
+            font_name="hud",
+        )
 
     def update(self):
         pass
@@ -738,7 +850,9 @@ class BattleBox(GUIElement):
         self.background_color = (0, 0, 0)
         self.border_color = (255, 255, 255)
         rect = self.get_internal_rect()
-        self.text = ProgressiveText(x=rect.x + 5, y=rect.y + 5, max_width=rect.width - 10)
+        self.text = ProgressiveText(
+            x=rect.x + 5, y=rect.y + 5, max_width=rect.width - 10
+        )
         self.menu = None
         self.current_menu_page = 0
 
@@ -746,9 +860,15 @@ class BattleBox(GUIElement):
         self.text.draw(surface)
 
     def render(self, surface):
-        pygame.draw.rect(surface, self.background_color, (self.x, self.y, self.width, self.height))
-        pygame.draw.rect(surface, self.border_color, (self.x, self.y, self.width, self.height),
-                         self.border_thickness)
+        pygame.draw.rect(
+            surface, self.background_color, (self.x, self.y, self.width, self.height)
+        )
+        pygame.draw.rect(
+            surface,
+            self.border_color,
+            (self.x, self.y, self.width, self.height),
+            self.border_thickness,
+        )
 
     def update(self):
         rect = self.get_internal_rect()
@@ -759,8 +879,12 @@ class BattleBox(GUIElement):
         pass
 
     def get_internal_rect(self):
-        return pygame.Rect(self.x + self.border_thickness, self.y + self.border_thickness,
-                           self.width - 2 * self.border_thickness, self.height - 2 * self.border_thickness)
+        return pygame.Rect(
+            self.x + self.border_thickness,
+            self.y + self.border_thickness,
+            self.width - 2 * self.border_thickness,
+            self.height - 2 * self.border_thickness,
+        )
 
     def set_encounter_text(self, text):
         self.text.set_text(text)
@@ -786,7 +910,17 @@ class MenuItem:
 
 
 class MenuContainer:
-    def __init__(self, menu=None, x=0, y=0, width=200, height=200, columns=2, spacing=5, font_size=27):
+    def __init__(
+        self,
+        menu=None,
+        x=0,
+        y=0,
+        width=200,
+        height=200,
+        columns=2,
+        spacing=5,
+        font_size=27,
+    ):
         self.x = x
         self.y = y
         self.width = width
@@ -806,7 +940,9 @@ class MenuContainer:
         row_items = 0
 
         while remaining_height > 0:
-            remaining_height -= draw_text_size("Sample", self.font_size)[1] + self.spacing
+            remaining_height -= (
+                draw_text_size("Sample", self.font_size)[1] + self.spacing
+            )
             if remaining_height > 0:
                 row_items += 1
 
@@ -833,7 +969,8 @@ class MenuContainer:
         x = self.x + 60 - 30
         y = self.y + 5 + 8
         items_on_current_page = self.get_items_for_page(
-            self.get_page_number_by_index(self.active_menu.selected_index))
+            self.get_page_number_by_index(self.active_menu.selected_index)
+        )
         selected_item = self.active_menu.get_selected_item()
 
         for item in items_on_current_page:
@@ -892,23 +1029,24 @@ class MenuContainer:
         x = self.x + 60
         y = self.y + 5
         items_on_current_page = self.get_items_for_page(
-            self.get_page_number_by_index(self.active_menu.selected_index))
+            self.get_page_number_by_index(self.active_menu.selected_index)
+        )
         for item in items_on_current_page:
             if y - self.y > self.height - self.font_size * 2:
                 x += 200
                 y = self.y + 5
             name = f"* {item.text}"
             width, height = draw_text_size(name, self.font_size)
-            draw_text(surface, name, self.font_size, (255, 255, 255),
-                      x, y)
+            draw_text(surface, name, self.font_size, (255, 255, 255), x, y)
             y += height + 5
 
         y = self.y + self.height - self.font_size - 10
         page_count = self.get_total_page_count()
         page_number = self.get_page_number_by_index(self.active_menu.selected_index)
         if page_count > 1:
-            draw_text(surface, f"PAGE {page_number}", self.font_size, (255, 255, 255),
-                      x, y)
+            draw_text(
+                surface, f"PAGE {page_number}", self.font_size, (255, 255, 255), x, y
+            )
 
     def update(self):
         pass  # logic for updating the menu like input handling goes here

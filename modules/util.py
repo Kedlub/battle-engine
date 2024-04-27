@@ -24,7 +24,16 @@ class StyledText:
 
 
 class ProgressiveText:
-    def __init__(self, target_text="", max_width=100, font_name="default", font_size=27, x=0, y=0, tick_length=2):
+    def __init__(
+        self,
+        target_text="",
+        max_width=100,
+        font_name="default",
+        font_size=27,
+        x=0,
+        y=0,
+        tick_length=2,
+    ):
         self.target_text = target_text
         self.current_text = ""
         self.max_width = max_width
@@ -53,7 +62,7 @@ class ProgressiveText:
                 command_end = target_text.find("]", command_start)
 
                 if command_end != -1:
-                    commands = target_text[command_start + 1:command_end].split('][')
+                    commands = target_text[command_start + 1 : command_end].split("][")
 
                     if len(clean_text) not in command_positions:
                         command_positions[len(clean_text)] = []
@@ -93,33 +102,56 @@ class ProgressiveText:
 
             if cmd_list:
                 for cmd in cmd_list:
-                    key, value = cmd.split(':', 1) if ':' in cmd else (cmd, None)
+                    key, value = cmd.split(":", 1) if ":" in cmd else (cmd, None)
 
-                    if key == 'color':
-                        current_color = tuple(int(value[i:i + 2], 16) for i in (0, 2, 4))
-                    elif key == 'font':
+                    if key == "color":
+                        current_color = tuple(
+                            int(value[i : i + 2], 16) for i in (0, 2, 4)
+                        )
+                    elif key == "font":
                         current_font_name = value
-                    elif key == 'charspacing':
+                    elif key == "charspacing":
                         current_char_spacing = int(value)
 
-            char_width, char_height = draw_text_size(char, self.font_size, font_name=current_font_name)
+            char_width, char_height = draw_text_size(
+                char, self.font_size, font_name=current_font_name
+            )
             x_offset += char_width + current_char_spacing
 
-            if char == ' ':
-                word_end_idx = self.current_text.find(' ', idx + 1)
-                next_word = self.current_text[idx + 1: word_end_idx if word_end_idx != -1 else len(self.current_text)]
-                next_word_width = draw_text_size(next_word, self.font_size, font_name=current_font_name)[0]
+            if char == " ":
+                word_end_idx = self.current_text.find(" ", idx + 1)
+                next_word = self.current_text[
+                    idx
+                    + 1 : word_end_idx if word_end_idx != -1 else len(self.current_text)
+                ]
+                next_word_width = draw_text_size(
+                    next_word, self.font_size, font_name=current_font_name
+                )[0]
 
                 if x_offset + next_word_width > self.max_width:
                     x_offset = self.x
                     y_offset += char_height
 
-            styled_text = StyledText(char, current_color, current_font_name, self.font_size, x_offset, y_offset)
+            styled_text = StyledText(
+                char,
+                current_color,
+                current_font_name,
+                self.font_size,
+                x_offset,
+                y_offset,
+            )
             styled_texts.append(styled_text)
 
         for styled_text in styled_texts:
-            draw_text(surface, styled_text.text, styled_text.font_size, styled_text.color, styled_text.x, styled_text.y,
-                      font_name=styled_text.font_name)
+            draw_text(
+                surface,
+                styled_text.text,
+                styled_text.font_size,
+                styled_text.color,
+                styled_text.x,
+                styled_text.y,
+                font_name=styled_text.font_name,
+            )
 
     def skip(self):
         self.current_text = self.target_text
@@ -136,7 +168,9 @@ class ProgressiveText:
             self.asterisk = True
             self.target_text = self.target_text.replace("[asterisk]", "")
 
-        self.target_command_positions, self.target_text_clean = self.preprocess_target_text(self.target_text)
+        self.target_command_positions, self.target_text_clean = (
+            self.preprocess_target_text(self.target_text)
+        )
 
         if self.instant_command:
             self.current_text = self.target_text_clean
@@ -157,7 +191,9 @@ class Interpolation:
     EASE_OUT = 2
     EASE_IN_OUT = 3
 
-    def __init__(self, obj, attr, start, end, duration, easing_mode=LINEAR, floating_point=False):
+    def __init__(
+        self, obj, attr, start, end, duration, easing_mode=LINEAR, floating_point=False
+    ):
         self.obj = obj
         self.attr = attr
         self.start = start
@@ -183,8 +219,13 @@ class Interpolation:
             if t < 0.5:
                 value = self.start + (self.end - self.start) / 2 * t * t * 2
             else:
-                value = self.start + (self.end - self.start) / 2 * (1 - (1 - (t * 2 - 1)) * (1 - (t * 2 - 1))) + (
-                            self.end - self.start) / 2
+                value = (
+                    self.start
+                    + (self.end - self.start)
+                    / 2
+                    * (1 - (1 - (t * 2 - 1)) * (1 - (t * 2 - 1)))
+                    + (self.end - self.start) / 2
+                )
 
         setattr(self.obj, self.attr, value if self.floating_point else int(value))
         return t != 1
@@ -203,12 +244,15 @@ class InterpolationManager(metaclass=Singleton):
         self.interpolations.remove(interpolation)
 
     def update(self, delta_time):
-        self.interpolations = [interpolation for interpolation in self.interpolations if
-                               interpolation.update(delta_time)]
+        self.interpolations = [
+            interpolation
+            for interpolation in self.interpolations
+            if interpolation.update(delta_time)
+        ]
 
 
 def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
+    """Get absolute path to resource, works for dev and for PyInstaller"""
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
@@ -226,7 +270,9 @@ def draw_gradient(surface, alpha, num_blocks, color, max_height):
         color_a = (color[0], color[1], color[2], alpha)
         rect = pygame.Surface((width, height / 2), pygame.SRCALPHA)
         rect.fill(color_a)
-        surface.blit(rect, (0, height - max_height + block_height * index + block_height))
+        surface.blit(
+            rect, (0, height - max_height + block_height * index + block_height)
+        )
 
 
 font_path = resource_path("assets/fonts/DTM-Sans.otf")
@@ -234,7 +280,7 @@ font_path = resource_path("assets/fonts/DTM-Sans.otf")
 font_dictionary = {
     "default": resource_path("assets/fonts/DTM-Sans.otf"),
     "attack": resource_path("assets/fonts/undertale-attack-font.ttf"),
-    "hud": resource_path("assets/fonts/undertale-in-game-hud-font.ttf")
+    "hud": resource_path("assets/fonts/undertale-in-game-hud-font.ttf"),
 }
 
 font_cache = {}
@@ -251,7 +297,17 @@ def load_font(name, size):
     return font_cache[font_cache_key]
 
 
-def draw_text(surface, text, size, color, x, y, anchor="topleft", rotation: int = 0, font_name="default"):
+def draw_text(
+    surface,
+    text,
+    size,
+    color,
+    x,
+    y,
+    anchor="topleft",
+    rotation: int = 0,
+    font_name="default",
+):
     font = load_font(font_dictionary[font_name], size)
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect()

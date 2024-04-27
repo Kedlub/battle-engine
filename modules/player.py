@@ -2,7 +2,16 @@ from modules.util import Singleton
 
 
 class Player(metaclass=Singleton):
-    def __init__(self, name="Chara", health=20, max_health=20, attack=5, defense=5, level=1, items=[]):
+    def __init__(
+        self,
+        name="Chara",
+        health=20,
+        max_health=20,
+        attack=5,
+        defense=5,
+        level=1,
+        items=[],
+    ):
         self.name = name
         self.health = health
         self.max_health = max_health
@@ -12,6 +21,7 @@ class Player(metaclass=Singleton):
         self.level = level
         self.items = items
 
+
 class Item:
     def __init__(self, name, description):
         self.name = name
@@ -19,6 +29,7 @@ class Item:
 
     def use(self, player):
         raise NotImplementedError("Subclasses must implement this method.")
+
 
 class HealingItem(Item):
     def __init__(self, name, description, healing_value):
@@ -28,6 +39,7 @@ class HealingItem(Item):
     def use(self, player):
         player.health = min(player.max_health, player.health + self.healing_value)
 
+
 class Weapon(Item):
     def __init__(self, name, description, damage):
         super().__init__(name, description)
@@ -35,6 +47,7 @@ class Weapon(Item):
 
     def use(self, player):
         player.attack = self.damage
+
 
 class Armor(Item):
     def __init__(self, name, description, armor_value):

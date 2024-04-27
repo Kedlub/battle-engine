@@ -22,10 +22,26 @@ class PapyrusBattle(Battle):
         # InterpolationManager().add_interpolation(
         #     Interpolation(self.battle_box, "y", HEIGHT, self.battle_box.y, 3000, Interpolation.EASE_OUT))
         InterpolationManager().add_interpolation(
-            Interpolation(self.player_stats, "y", HEIGHT + 200, self.player_stats.y, 3000, Interpolation.EASE_OUT))
+            Interpolation(
+                self.player_stats,
+                "y",
+                HEIGHT + 200,
+                self.player_stats.y,
+                3000,
+                Interpolation.EASE_OUT,
+            )
+        )
         for i, button in enumerate(self.buttons):
             InterpolationManager().add_interpolation(
-                Interpolation(button, "y", HEIGHT + (300 * (i + 1)), button.y, 3000, Interpolation.EASE_OUT))
+                Interpolation(
+                    button,
+                    "y",
+                    HEIGHT + (300 * (i + 1)),
+                    button.y,
+                    3000,
+                    Interpolation.EASE_OUT,
+                )
+            )
 
     def render(self, surface):
         super(PapyrusBattle, self).render(surface)
@@ -35,8 +51,15 @@ class PapyrusBattle(Battle):
         self.tick += 1
         if self.tick == 50:
             InterpolationManager().add_interpolation(
-                Interpolation(self.player_stats.player, "max_health", self.player_stats.player.max_health, 192, 3000,
-                              Interpolation.EASE_OUT))
+                Interpolation(
+                    self.player_stats.player,
+                    "max_health",
+                    self.player_stats.player.max_health,
+                    192,
+                    3000,
+                    Interpolation.EASE_OUT,
+                )
+            )
 
     def process_input(self, event):
         super(PapyrusBattle, self).process_input(event)
@@ -46,7 +69,9 @@ class PapyrusBattle(Battle):
 class PapyrusEnemy(Enemy):
     def __init__(self):
         image = pygame.image.load("examples/assets/papyrus.png")
-        super(PapyrusEnemy, self).__init__(image, position=(250, 40), name="Papyrus", health=100)
+        super(PapyrusEnemy, self).__init__(
+            image, position=(250, 40), name="Papyrus", health=100
+        )
         self.acts = [MenuItem("Wave", self.wave)]
         self.battle = Battle()
 
@@ -74,11 +99,15 @@ class TestBone(BattleObject):
         super(TestBone, self).__init__(sprite, position, rotation, damage)
 
     def update(self):
-        self.position = [int(self.position[0] - (150 * (Game().delta_time / 1000))), int(self.position[1])]
+        self.position = [
+            int(self.position[0] - (150 * (Game().delta_time / 1000))),
+            int(self.position[1]),
+        ]
         super(TestBone, self).update()
-        
+
     def render(self, surface):
         surface.blit(self.sprite, self.position)
+
 
 class TestRound(Round):
     def __init__(self, battle):
@@ -93,10 +122,17 @@ class TestRound(Round):
             if random.randint(0, 1) == 0:
                 bone = TestBone((battle_rect.x + battle_rect.width, battle_rect.y))
             else:
-                bone = TestBone((battle_rect.x + battle_rect.width, battle_rect.y + battle_rect.height / 2))
+                bone = TestBone(
+                    (
+                        battle_rect.x + battle_rect.width,
+                        battle_rect.y + battle_rect.height / 2,
+                    )
+                )
             self.add_object(bone)
             self.last_spawn_time = self.time
         if self.time >= 7000:
             # Action to end the turn
-            self.battle.battle_box.set_encounter_text("A lot of low quality bones fill the room.")
+            self.battle.battle_box.set_encounter_text(
+                "A lot of low quality bones fill the room."
+            )
             self.end_turn()
