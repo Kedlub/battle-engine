@@ -116,7 +116,6 @@ class ProgressiveText:
             char_width, char_height = draw_text_size(
                 char, self.font_size, font_name=current_font_name
             )
-            x_offset += char_width + current_char_spacing
 
             if char == " ":
                 word_end_idx = self.current_text.find(" ", idx + 1)
@@ -141,6 +140,8 @@ class ProgressiveText:
                 y_offset,
             )
             styled_texts.append(styled_text)
+            
+            x_offset += char_width + current_char_spacing
 
         for styled_text in styled_texts:
             draw_text(

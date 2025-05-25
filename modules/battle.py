@@ -851,7 +851,7 @@ class BattleBox(GUIElement):
         self.border_color = (255, 255, 255)
         rect = self.get_internal_rect()
         self.text = ProgressiveText(
-            x=rect.x + 5, y=rect.y + 5, max_width=rect.width - 10
+            x=rect.x + 14, y=rect.y + 5, max_width=rect.width - 28
         )
         self.menu = None
         self.current_menu_page = 0
@@ -872,9 +872,9 @@ class BattleBox(GUIElement):
 
     def update(self):
         rect = self.get_internal_rect()
-        self.text.x = rect.x + 5
+        self.text.x = rect.x + 14
         self.text.y = rect.y + 5
-        self.text.max_width = rect.width - 10
+        self.text.max_width = rect.width - 28
         self.text.update()
         pass
 
