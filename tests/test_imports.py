@@ -87,21 +87,3 @@ def test_submodule_exports():
         "battle_engine.battle.ui",
         ["BattleBox", "Button", "Menu", "MenuItem"],
     )
-
-
-def test_util_backward_compat():
-    """util.py should re-export everything for backward compatibility."""
-    _check_attrs(
-        "battle_engine.util",
-        [
-            "Singleton",
-            "Interpolation",
-            "InterpolationManager",
-            "ProgressiveText",
-            "StyledText",
-            "draw_text",
-            "draw_text_size",
-            "draw_gradient",
-            "register_font",
-        ],
-    )

@@ -33,7 +33,6 @@ src/battle_engine/       # Installable package
   text.py                # ProgressiveText + StyledText
   fonts.py               # Font registry, draw_text, draw_text_size
   drawing.py             # draw_gradient
-  util.py                # Re-exports from above modules (backward compat)
   overworld.py           # Overworld stub
   battle/                # Battle system subpackage
     __init__.py           # Re-exports all battle classes
