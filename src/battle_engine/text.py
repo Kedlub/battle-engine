@@ -108,8 +108,9 @@ class ProgressiveText:
             if char == " ":
                 word_end_idx = self.current_text.find(" ", idx + 1)
                 next_word = self.current_text[
-                    idx
-                    + 1 : word_end_idx if word_end_idx != -1 else len(self.current_text)
+                    idx + 1 : word_end_idx
+                    if word_end_idx != -1
+                    else len(self.current_text)
                 ]
                 next_word_width = draw_text_size(
                     next_word, self.font_size, font_name=current_font_name

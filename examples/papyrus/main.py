@@ -76,9 +76,7 @@ class PapyrusBattle(Battle):
 class PapyrusEnemy(Enemy):
     def __init__(self):
         image = pygame.image.load(str(_ASSETS_DIR / "papyrus.png"))
-        super().__init__(
-            image, position=(250, 40), name="Papyrus", health=100
-        )
+        super().__init__(image, position=(250, 40), name="Papyrus", health=100)
         self.acts = [MenuItem("Wave", self.wave)]
         self.battle = Battle()
 

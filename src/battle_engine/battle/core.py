@@ -32,18 +32,10 @@ class Battle(GameMode):
         pass
 
     def add_default_buttons(self):
-        self.add_button(
-            "battle/button/fight0.png", "battle/button/fight1.png"
-        )
-        self.add_button(
-            "battle/button/act0.png", "battle/button/act1.png"
-        )
-        self.add_button(
-            "battle/button/item0.png", "battle/button/item1.png"
-        )
-        self.add_button(
-            "battle/button/mercy0.png", "battle/button/mercy1.png"
-        )
+        self.add_button("battle/button/fight0.png", "battle/button/fight1.png")
+        self.add_button("battle/button/act0.png", "battle/button/act1.png")
+        self.add_button("battle/button/item0.png", "battle/button/item1.png")
+        self.add_button("battle/button/mercy0.png", "battle/button/mercy1.png")
         self.create_buttons()
 
     def calculate_spacing(self, num_of_buttons, screen_width):

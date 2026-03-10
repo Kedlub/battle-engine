@@ -48,7 +48,6 @@ class Interpolation:
 
 
 class InterpolationManager(metaclass=Singleton):
-
     def __init__(self):
         self.interpolations = []
 
