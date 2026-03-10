@@ -14,8 +14,9 @@ uv run python launch.py  # Run the example Papyrus battle
 ```
 
 ```bash
-uv run ruff check src/ examples/ tests/  # Lint
-uv run pytest -v                          # Run tests
+uv run ruff check src/ examples/ tests/   # Lint
+uv run ruff format src/ examples/ tests/  # Format
+uv run pytest -v                           # Run tests
 ```
 
 ## Project Structure
