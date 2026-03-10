@@ -1,7 +1,13 @@
 import pygame
 
 
-def draw_gradient(surface, alpha, num_blocks, color, max_height):
+def draw_gradient(
+    surface: pygame.Surface,
+    alpha: int,
+    num_blocks: int,
+    color: tuple[int, int, int],
+    max_height: float,
+) -> None:
     width = surface.get_width()
     height = surface.get_height()
     block_height = max_height / num_blocks

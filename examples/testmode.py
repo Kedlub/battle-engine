@@ -45,5 +45,5 @@ class TestMode(GameMode):
             min_yOffset + amplitude + amplitude * math.sin(2 * math.pi * time)
         )
 
-    def process_input(self, events):
+    def process_input(self, event):
         pass

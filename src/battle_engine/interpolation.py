@@ -1,3 +1,5 @@
+from typing import Any
+
 from .singleton import Singleton
 
 
@@ -8,26 +10,34 @@ class Interpolation:
     EASE_IN_OUT = 3
 
     def __init__(
-        self, obj, attr, start, end, duration, easing_mode=LINEAR, floating_point=False
-    ):
+        self,
+        obj: Any,
+        attr: str,
+        start: float,
+        end: float,
+        duration: float,
+        easing_mode: int = LINEAR,
+        floating_point: bool = False,
+    ) -> None:
         self.obj = obj
         self.attr = attr
         self.start = start
         self.end = end
         self.duration = duration
         self.easing_mode = easing_mode
-        self.elapsed_time = 0
+        self.elapsed_time: float = 0
         self.floating_point = floating_point
 
-    def update(self, delta_time):
+    def update(self, delta_time: float) -> bool:
         self.elapsed_time += delta_time
         t = self.elapsed_time / self.duration
         if self.elapsed_time >= self.duration:
             t = 1
 
-        if self.easing_mode == self.LINEAR:
-            value = self.start + (self.end - self.start) * t
-        elif self.easing_mode == self.EASE_IN:
+        # LINEAR as default
+        value = self.start + (self.end - self.start) * t
+
+        if self.easing_mode == self.EASE_IN:
             value = self.start + (self.end - self.start) * t * t
         elif self.easing_mode == self.EASE_OUT:
             value = self.start + (self.end - self.start) * (1 - (1 - t) * (1 - t))
@@ -48,17 +58,17 @@ class Interpolation:
 
 
 class InterpolationManager(metaclass=Singleton):
-    def __init__(self):
-        self.interpolations = []
+    def __init__(self) -> None:
+        self.interpolations: list[Interpolation] = []
 
-    def add_interpolation(self, interpolation):
+    def add_interpolation(self, interpolation: Interpolation) -> None:
         interpolation.elapsed_time = 0
         self.interpolations.append(interpolation)
 
-    def remove_interpolation(self, interpolation):
+    def remove_interpolation(self, interpolation: Interpolation) -> None:
         self.interpolations.remove(interpolation)
 
-    def update(self, delta_time):
+    def update(self, delta_time: float) -> None:
         self.interpolations = [
             interpolation
             for interpolation in self.interpolations

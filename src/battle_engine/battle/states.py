@@ -1,33 +1,41 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pygame
 
 from ..constants import CONFIRM_BUTTON, DISMISS_BUTTON
 from ..game import Game
 from .ui import Menu, MenuContainer, MenuItem, TargetUI
 
+if TYPE_CHECKING:
+    from .core import Battle
+    from .enemy import Enemy
+
 
 class BattleState:
-    def process_input(self, battle, event):
+    def process_input(self, battle: Battle, event: pygame.event.Event) -> None:
         pass
 
-    def update(self, battle):
+    def update(self, battle: Battle) -> None:
         pass
 
-    def render(self, battle, surface):
+    def render(self, battle: Battle, surface: pygame.Surface) -> None:
         pass
 
-    def show_soul(self):
+    def show_soul(self) -> bool:
         return True
 
 
 class ButtonSelectState(BattleState):
-    def render(self, battle, surface):
+    def render(self, battle: Battle, surface: pygame.Surface) -> None:
         battle.battle_box.render_text(surface)
 
-    def update(self, battle):
+    def update(self, battle: Battle) -> None:
         for button in battle.buttons:
             button.move_player()
 
-    def process_input(self, battle, event):
+    def process_input(self, battle: Battle, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
                 battle.select_button(battle.selected_button - 1)
@@ -63,8 +71,8 @@ class ButtonSelectState(BattleState):
 
 
 class MenuSelectState(BattleState):
-    def __init__(self, menu):
-        battle_rect = Game().game_mode.battle_box.get_internal_rect()
+    def __init__(self, menu: Menu) -> None:
+        battle_rect = Game().battle.battle_box.get_internal_rect()
         self.menu = MenuContainer(
             x=battle_rect.x,
             y=battle_rect.y,
@@ -73,10 +81,10 @@ class MenuSelectState(BattleState):
         )
         self.menu.set_menu(menu)
 
-    def render(self, battle, surface):
+    def render(self, battle: Battle, surface: pygame.Surface) -> None:
         self.menu.render(surface)
 
-    def process_input(self, battle, event):
+    def process_input(self, battle: Battle, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
                 self.menu.select_next_in_row(-1)
@@ -93,16 +101,16 @@ class MenuSelectState(BattleState):
 
 
 class TargetState(BattleState):
-    def __init__(self, enemy):
+    def __init__(self, enemy: Enemy) -> None:
         super().__init__()
-        self.target = TargetUI(Game().game_mode.battle_box, enemy.max_health)
+        self.target = TargetUI(Game().battle.battle_box, enemy.max_health)
         self.enemy = enemy
         self.target.show()
 
-    def render(self, battle, surface):
+    def render(self, battle: Battle, surface: pygame.Surface) -> None:
         self.target.render(surface)
 
-    def process_input(self, battle, event):
+    def process_input(self, battle: Battle, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
             if event.key in CONFIRM_BUTTON and self.target.active:
                 battle.current_round = battle.select_next_round()
@@ -110,25 +118,25 @@ class TargetState(BattleState):
                 power = self.target.get_hit_power()
                 self.enemy.hit(power)
 
-    def update(self, battle):
+    def update(self, battle: Battle) -> None:
         self.target.update()
 
-    def show_soul(self):
+    def show_soul(self) -> bool:
         return False
 
 
 class DefendingState(BattleState):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.current_round = Game().game_mode.current_round
+        self.current_round = Game().battle.current_round
 
-    def render(self, battle, surface):
+    def render(self, battle: Battle, surface: pygame.Surface) -> None:
         self.current_round.render(surface)
 
-    def process_input(self, battle, event):
+    def process_input(self, battle: Battle, event: pygame.event.Event) -> None:
         self.current_round.process_input(event)
 
-    def update(self, battle):
+    def update(self, battle: Battle) -> None:
         if not self.current_round.active:
             battle.gameStateStack.pop()
             battle.gameStateStack.append(ButtonSelectState())
@@ -136,5 +144,5 @@ class DefendingState(BattleState):
         battle.player_object.update()
         self.current_round.update()
 
-    def show_soul(self):
+    def show_soul(self) -> bool:
         return True

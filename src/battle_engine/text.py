@@ -1,8 +1,21 @@
+import pygame
+
 from .fonts import draw_text, draw_text_size
+
+ColorTuple = tuple[int, int, int]
 
 
 class StyledText:
-    def __init__(self, text, color, font_name, font_size, x, y, char_spacing=0):
+    def __init__(
+        self,
+        text: str,
+        color: ColorTuple,
+        font_name: str,
+        font_size: int,
+        x: int,
+        y: int,
+        char_spacing: int = 0,
+    ) -> None:
         self.text = text
         self.color = color
         self.font_name = font_name
@@ -15,34 +28,39 @@ class StyledText:
 class ProgressiveText:
     def __init__(
         self,
-        target_text="",
-        max_width=100,
-        font_name="default",
-        font_size=27,
-        x=0,
-        y=0,
-        tick_length=2,
-    ):
+        target_text: str = "",
+        max_width: int = 100,
+        font_name: str = "default",
+        font_size: int = 27,
+        x: int = 0,
+        y: int = 0,
+        tick_length: int = 2,
+    ) -> None:
         self.target_text = target_text
-        self.current_text = ""
+        self.current_text: str = ""
         self.max_width = max_width
         self.font_name = font_name
         self.font_size = font_size
-        self.lines = []
+        self.lines: list[str] = []
         self.x = x
         self.y = y
-        self.color = (255, 255, 255)
+        self.color: ColorTuple = (255, 255, 255)
         self.tick_length = tick_length
-        self.tick = 0
-        self.finished = False
-        self.char_spacing = 2
-        self.instant_command = False
-        self.asterisk = False
+        self.tick: int = 0
+        self.finished: bool = False
+        self.char_spacing: int = 2
+        self.instant_command: bool = False
+        self.asterisk: bool = False
+        self.target_command_positions: dict[int, list[str]] = {}
+        self.target_text_clean: str = ""
         self.set_text(target_text)
 
-    def preprocess_target_text(self, target_text):
+    def preprocess_target_text(
+        self,
+        target_text: str,
+    ) -> tuple[dict[int, list[str]], str]:
         index = 0
-        command_positions = {}
+        command_positions: dict[int, list[str]] = {}
         clean_text = ""
 
         while index < len(target_text):
@@ -67,7 +85,7 @@ class ProgressiveText:
 
         return command_positions, clean_text
 
-    def update(self):
+    def update(self) -> None:
         if len(self.current_text) < len(self.target_text_clean):
             self.finished = False
             self.tick += 1
@@ -77,8 +95,8 @@ class ProgressiveText:
         elif not self.finished:
             self.finished = True
 
-    def draw(self, surface):
-        styled_texts = []
+    def draw(self, surface: pygame.Surface) -> None:
+        styled_texts: list[StyledText] = []
         x_offset = self.x
         y_offset = self.y
         current_color = self.color
@@ -92,13 +110,12 @@ class ProgressiveText:
                 for cmd in cmd_list:
                     key, value = cmd.split(":", 1) if ":" in cmd else (cmd, None)
 
-                    if key == "color":
-                        current_color = tuple(
-                            int(value[i : i + 2], 16) for i in (0, 2, 4)
-                        )
-                    elif key == "font":
+                    if key == "color" and value is not None:
+                        r, g, b = (int(value[i : i + 2], 16) for i in (0, 2, 4))
+                        current_color = (r, g, b)
+                    elif key == "font" and value is not None:
                         current_font_name = value
-                    elif key == "charspacing":
+                    elif key == "charspacing" and value is not None:
                         current_char_spacing = int(value)
 
             char_width, char_height = draw_text_size(
@@ -143,10 +160,10 @@ class ProgressiveText:
                 font_name=styled_text.font_name,
             )
 
-    def skip(self):
+    def skip(self) -> None:
         self.current_text = self.target_text
 
-    def set_text(self, text):
+    def set_text(self, text: str) -> None:
         self.target_text = text
         self.current_text = ""
 

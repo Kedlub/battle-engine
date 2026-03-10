@@ -1,21 +1,26 @@
+from __future__ import annotations
+
+import pygame
+
 from .._assets import asset_frames
 from ..drawing import draw_gradient
 from ..game import Game, GameMode
 from ..player import Player
-from .objects import PlayerObject
-from .states import ButtonSelectState, DefendingState
+from .enemy import Enemy
+from .objects import BattleObject, PlayerObject
+from .states import BattleState, ButtonSelectState, DefendingState
 from .ui import BattleBox, Button, PlayerStats
 
 
 class Battle(GameMode):
-    def __init__(self, game=Game()):
+    def __init__(self, game: Game = Game()) -> None:
         super().__init__(game)
-        self.button_data = []
-        self.buttons = []
-        self.current_round = None
-        self.enemies = []
-        self.gameStateStack = [ButtonSelectState()]
-        self.selected_button = 0
+        self.button_data: list[dict[str, str]] = []
+        self.buttons: list[Button] = []
+        self.current_round: Round | None = None
+        self.enemies: list[Enemy] = []
+        self.gameStateStack: list[BattleState] = [ButtonSelectState()]
+        self.selected_button: int = 0
         self.player_stats = PlayerStats(
             Player(name="Chara", level=19, health=90, max_health=92),
             (40, game.surface.get_height() - 80),
@@ -25,44 +30,44 @@ class Battle(GameMode):
             position=(33, game.surface.get_height() / 2 + 9), width=575, height=140
         )
         self.add_default_buttons()
-        self.hit_visual = asset_frames("battle/hit/knife")
-        self.objects = []
+        self.hit_visual: list[pygame.Surface] = asset_frames("battle/hit/knife")
+        self.objects: list[BattleObject] = []
 
-    def post_init(self):
+    def post_init(self) -> None:
         pass
 
-    def add_default_buttons(self):
+    def add_default_buttons(self) -> None:
         self.add_button("battle/button/fight0.png", "battle/button/fight1.png")
         self.add_button("battle/button/act0.png", "battle/button/act1.png")
         self.add_button("battle/button/item0.png", "battle/button/item1.png")
         self.add_button("battle/button/mercy0.png", "battle/button/mercy1.png")
         self.create_buttons()
 
-    def calculate_spacing(self, num_of_buttons, screen_width):
+    def calculate_spacing(self, num_of_buttons: int, screen_width: int) -> float:
         button_space_evenly = (screen_width - num_of_buttons * Button.default_width) / (
             num_of_buttons + 1
         )
         return button_space_evenly
 
-    def select_next_round(self):
+    def select_next_round(self) -> Round | None:
         pass
 
-    def attack_enemy(self, enemy):
+    def attack_enemy(self, enemy: Enemy) -> None:
         if enemy in self.enemies:
             from .states import TargetState
 
             state = TargetState(enemy)
             self.gameStateStack.append(state)
 
-    def use_item(self, item):
+    def use_item(self, item: str) -> None:
         pass
 
-    def add_button(self, inactive_texture, active_texture):
+    def add_button(self, inactive_texture: str, active_texture: str) -> None:
         self.button_data.append(
             {"inactive": inactive_texture, "active": active_texture}
         )
 
-    def create_buttons(self):
+    def create_buttons(self) -> None:
         screen_width = self.game.surface.get_width()
         screen_height = self.game.surface.get_height()
         num_buttons = len(self.button_data)
@@ -76,10 +81,10 @@ class Battle(GameMode):
 
         self.select_button(0)
 
-    def init(self, game):
+    def init(self, game: Game) -> None:
         self.game = game
 
-    def render(self, surface):
+    def render(self, surface: pygame.Surface) -> None:
         draw_gradient(surface, 25, 6, (255, 255, 255), surface.get_height() / 2)
         for button in self.buttons:
             button.render(surface)
@@ -94,7 +99,7 @@ class Battle(GameMode):
             if self.gameStateStack[-1].show_soul():
                 self.player_object.render(surface)
 
-    def update(self, surface):
+    def update(self, surface: pygame.Surface) -> None:
         if self.gameStateStack:
             self.gameStateStack[-1].update(self)
         for enemy in self.enemies:
@@ -103,61 +108,61 @@ class Battle(GameMode):
             obj.update()
         self.battle_box.update()
 
-    def select_button(self, button):
+    def select_button(self, button: int) -> None:
         self.buttons[self.selected_button].set_active(False)
         self.selected_button = button % len(self.buttons)
         self.buttons[self.selected_button].set_active(True)
 
-    def unselect_all_buttons(self):
+    def unselect_all_buttons(self) -> None:
         for button in self.buttons:
             button.set_active(False)
 
-    def is_active_state(self, state):
-        return self.gameStateStack and self.gameStateStack[-1] == state
+    def is_active_state(self, state: BattleState) -> bool:
+        return bool(self.gameStateStack and self.gameStateStack[-1] == state)
 
-    def process_input(self, event):
+    def process_input(self, event: pygame.event.Event) -> None:
         if self.gameStateStack:
             self.gameStateStack[-1].process_input(self, event)
 
-    def add_object(self, obj):
+    def add_object(self, obj: BattleObject) -> None:
         self.objects.append(obj)
 
-    def end_round(self):
+    def end_round(self) -> None:
         if not self.current_round:
             self.current_round = self.select_next_round()
         self.gameStateStack.append(DefendingState())
 
 
 class Round:
-    def __init__(self, battle):
-        self.objects = []
-        self.time = 0
-        self.active = True
+    def __init__(self, battle: Battle) -> None:
+        self.objects: list[BattleObject] = []
+        self.time: float = 0
+        self.active: bool = True
         self.battle = battle
 
-    def start(self):
+    def start(self) -> None:
         pass
 
-    def render(self, surface):
+    def render(self, surface: pygame.Surface) -> None:
         for obj in self.objects:
             obj.render(surface)
 
-    def update(self):
+    def update(self) -> None:
         self.time += Game().delta_time
         self.round_update()
         self.objects = [obj for obj in self.objects if not obj.destroyed]
         for obj in self.objects:
             obj.update()
 
-    def round_update(self):
+    def round_update(self) -> None:
         pass
 
-    def process_input(self, event):
+    def process_input(self, event: pygame.event.Event) -> None:
         pass
 
-    def add_object(self, obj):
+    def add_object(self, obj: BattleObject) -> None:
         self.objects.append(obj)
 
-    def end_turn(self):
+    def end_turn(self) -> None:
         self.active = False
-        Game().game_mode.player_stats.player.invulnerability_time = 0
+        Game().battle.player_stats.player.invulnerability_time = 0

@@ -12,6 +12,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "basedpyright>=1.29",
     "ruff>=0.9",
     "pytest>=8",
 ]
@@ -35,3 +36,15 @@ quote-style = "double"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.basedpyright]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+reportUnannotatedClassAttribute = false
+reportImplicitOverride = false
+reportUnusedCallResult = false
+reportUnusedParameter = false
