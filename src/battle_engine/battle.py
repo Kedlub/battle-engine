@@ -3,14 +3,12 @@ from typing import List
 import pygame
 import enum
 import random
-import os
 import math
 
-from modules.constants import CONFIRM_BUTTON, DISMISS_BUTTON, WIDTH
-from modules.game import GameMode, Game
-from modules.player import Player
-from modules.util import (
-    resource_path,
+from .constants import CONFIRM_BUTTON, DISMISS_BUTTON, WIDTH
+from .game import GameMode, Game
+from .player import Player
+from .util import (
     draw_gradient,
     draw_text,
     ProgressiveText,
@@ -19,6 +17,7 @@ from modules.util import (
     InterpolationManager,
     Interpolation,
 )
+from ._assets import asset_surface, asset_frames
 
 
 class BattleState:
@@ -56,7 +55,7 @@ class Battle(GameMode):
         )
         battle_rect = self.battle_box.get_internal_rect()
         self.add_default_buttons()
-        self.hit_visual = HitVisual.load_frames("assets/battle/hit/knife")
+        self.hit_visual = asset_frames("battle/hit/knife")
         self.objects = []
 
     def post_init(self):
@@ -64,16 +63,16 @@ class Battle(GameMode):
 
     def add_default_buttons(self):
         self.add_button(
-            "assets/battle/button/fight0.png", "assets/battle/button/fight1.png"
+            "battle/button/fight0.png", "battle/button/fight1.png"
         )
         self.add_button(
-            "assets/battle/button/act0.png", "assets/battle/button/act1.png"
+            "battle/button/act0.png", "battle/button/act1.png"
         )
         self.add_button(
-            "assets/battle/button/item0.png", "assets/battle/button/item1.png"
+            "battle/button/item0.png", "battle/button/item1.png"
         )
         self.add_button(
-            "assets/battle/button/mercy0.png", "assets/battle/button/mercy1.png"
+            "battle/button/mercy0.png", "battle/button/mercy1.png"
         )
         self.create_buttons()
 
@@ -119,7 +118,6 @@ class Battle(GameMode):
         self.game = game
 
     def render(self, surface):
-        # Implement Battle mode rendering here
         draw_gradient(surface, 25, 6, (255, 255, 255), surface.get_height() / 2)
         for button in self.buttons:
             button.render(surface)
@@ -142,7 +140,6 @@ class Battle(GameMode):
             enemy.update(surface)
         for obj in self.objects:
             obj.update()
-        # self.player_object.update()
         self.battle_box.update()
         pass
 
@@ -159,7 +156,6 @@ class Battle(GameMode):
         return self.gameStateStack and self.gameStateStack[-1] == state
 
     def process_input(self, event):
-        # Implement input handling in Battle mode here
         if self.gameStateStack:
             self.gameStateStack[-1].process_input(self, event)
 
@@ -187,8 +183,6 @@ class ButtonSelectState(BattleState):
             elif event.key == pygame.K_RIGHT:
                 battle.select_button(battle.selected_button + 1)
             elif event.key in CONFIRM_BUTTON:
-                # hardcoded button for now, will be made using callbacks later
-                # confirm the selection
                 if battle.selected_button == 0:
                     menu = Menu()
                     for enemy in battle.enemies:
@@ -197,7 +191,6 @@ class ButtonSelectState(BattleState):
                         menu.add_item(item)
                     battle.gameStateStack.append(MenuSelectState(menu))
                 elif battle.selected_button == 1:
-                    # act menu should list all enemies and their acts
                     menu = Menu()
                     for enemy in battle.enemies:
                         submenu = Menu()
@@ -217,16 +210,11 @@ class ButtonSelectState(BattleState):
                     )
 
 
-# Dialog state is a state which is made for a longer multistep dialogue, which the player advances by pressing the confirm button
-# It takes a list of Dialog objects, which define the text and where should it be shown
 class DialogState(BattleState):
     def __init__(self, dialog):
         pass
 
 
-# Dialog contains information about a dialog's type, position, size and content
-# Type can be bubble or battle box
-# If type is battle box, position and size are irrelevant
 class Dialog:
     def __init__(self, type, position, size, content):
         self.type = type
@@ -296,8 +284,6 @@ class DefendingState(BattleState):
         self.current_round = Game().game_mode.current_round
 
     def render(self, battle, surface):
-        # TODO: Implement defending state rendering, maybe none is needed? We have the battle.objects list, which can contain the projectiles
-        # Probably should implement it anyways, just in case
         self.current_round.render(surface)
 
     def process_input(self, battle, event):
@@ -322,7 +308,6 @@ class Round:
         self.active = True
         self.battle = battle
 
-    # called on the actual activation of round
     def start(self):
         pass
 
@@ -337,7 +322,6 @@ class Round:
         for obj in self.objects:
             obj.update()
 
-    # function for custom round update logic, normal update is reserved
     def round_update(self):
         pass
 
@@ -363,7 +347,6 @@ class BattleObject:
         self.player_stats = Game().game_mode.player_stats
 
     def update(self):
-        # Update the mask after rotating the image
         self.mask = pygame.mask.from_surface(
             pygame.transform.rotate(self.sprite, self.rotation)
         )
@@ -378,10 +361,7 @@ class BattleObject:
         pass
 
     def collides_with(self, other):
-        # Calculate the offset between the two objects
         offset = (other.rect.x - self.position[0], other.rect.y - self.position[1])
-
-        # Check if the masks overlap
         return self.mask.overlap(other.mask, offset) is not None
 
 
@@ -419,13 +399,10 @@ class Enemy:
     def update(self, surface):
         if self.being_attacked:
             if not self.hit_visual.active and not self.shake_ticks:
-                # If the hit visual has finished, start the shake and deal damage if it hasn't started yet
                 power_ratio = min(self.hit_power / float(self.max_health), 1.0)
                 self.shake_dist = int(power_ratio * (self.sprite.get_width() / 2))
                 self.shake_speed = max(1, int(20 * power_ratio))
                 self.shake_ticks = 6 * self.shake_speed
-                # Subtract the hit power from the enemy's health
-                # Alternatively, this might be done based on the outcome of the shake animation
                 self.health -= self.hit_power
                 InterpolationManager().add_interpolation(
                     Interpolation(
@@ -434,10 +411,8 @@ class Enemy:
                 )
                 self.healthbar_ticks = 100
             elif self.hit_visual.active:
-                # Update the hit_visual
                 self.hit_visual.update()
 
-        # The shake update stays the same
         if self.shake_ticks > 0:
             self.shake_ticks -= 1
             if self.shake_ticks % self.shake_speed == 0:
@@ -461,8 +436,6 @@ class Enemy:
         self.hit_power = damage
 
     def render(self, surface):
-        # Base implementation of render using only one sprite, enemies don't have to use this one sprite,
-        # it can instead use different sprites for different body part
         surface.blit(pygame.transform.rotate(self.sprite, self.rotation), self.position)
         if self.hit_visual.active:
             self.hit_visual.render(surface)
@@ -482,14 +455,12 @@ class Enemy:
             self.current_health / self.max_health
         ) * self.health_bar_width
 
-        # Draw the red background representing the maximum health
         pygame.draw.rect(
             surface,
             max_health_bar_color,
             (health_bar_x, health_bar_y, max_health_width, self.health_bar_height),
         )
 
-        # Draw the green foreground representing the current health
         pygame.draw.rect(
             surface,
             current_health_bar_color,
@@ -506,7 +477,7 @@ class Enemy:
 class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
     def __init__(self, x=0, y=0, color=(255, 0, 0)):
         super().__init__()
-        self.sprite = pygame.image.load(resource_path("assets/battle/soul/soul.png"))
+        self.sprite = asset_surface("battle/soul/soul.png")
         self.rect = self.sprite.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -539,11 +510,8 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
     def rotate(self, angle):
         self.rotation += angle
 
-    # a function to detect collision with the battle_box boundaries, or with an object in self.objects that has a collision box
-    # and adjust the player's position accordingly
     def check_collision(self):
         battle_rect = self.game.game_mode.battle_box.get_internal_rect()
-        # check if the player is colliding with the battle_box boundary
         self.rect.left = max(self.rect.left, battle_rect.left)
         self.rect.right = min(self.rect.right, battle_rect.right)
         self.rect.top = max(self.rect.top, battle_rect.top)
@@ -569,7 +537,6 @@ class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):
         self.check_collision()
 
     def render(self, surface):
-        # if player invulnerability time is not 0, draw the player with 50% alpha
         if self.player.invulnerability_time > 0:
             self.sprite.set_alpha(128)
         else:
@@ -624,18 +591,6 @@ class HitVisual(GUIElement):
         self.x = rect.centerx - self.frames[0].get_width() / 2
         self.y = rect.centery - self.frames[0].get_height() / 2
 
-    @staticmethod
-    def load_frames(path):
-        frames = []
-        i = 1
-        while True:
-            try:
-                frames.append(pygame.image.load(resource_path(f"{path}{i}.png")))
-                i += 1
-            except FileNotFoundError:
-                break
-        return frames
-
     def update(self):
         if not self.active:
             return
@@ -653,15 +608,9 @@ class HitVisual(GUIElement):
 class TargetUI(GUIElement):
     def __init__(self, battle_box, enemy_max_health):
         super().__init__()
-        bg_sprite = pygame.image.load(
-            resource_path("assets/battle/target_ui/target.png")
-        )
-        aim_sprite1 = pygame.image.load(
-            resource_path("assets/battle/target_ui/target_aim1.png")
-        )
-        aim_sprite2 = pygame.image.load(
-            resource_path("assets/battle/target_ui/target_aim2.png")
-        )
+        bg_sprite = asset_surface("battle/target_ui/target.png")
+        aim_sprite1 = asset_surface("battle/target_ui/target_aim1.png")
+        aim_sprite2 = asset_surface("battle/target_ui/target_aim2.png")
         self.background = bg_sprite
         self.aim_cursor = [aim_sprite1, aim_sprite2]
         self.direction = random.choice([-1, 1])
@@ -752,12 +701,11 @@ class PlayerStats(GUIElement):
         self.player = player
         self.width = 570
         self.height = 21
-        self.hp_sprite = pygame.image.load("assets/battle/hp.png")
-        self.karma_sprite = pygame.image.load("assets/battle/karma.png")
+        self.hp_sprite = asset_surface("battle/hp.png")
+        self.karma_sprite = asset_surface("battle/karma.png")
 
     def render(self, surface):
         y_offset = 6
-        # pygame.draw.rect(surface, (0, 120, 120), (self.x, self.y, self.width, self.height))
         draw_text(
             surface,
             self.player.name,
@@ -817,8 +765,8 @@ class Button(GUIElement):
 
     def __init__(self, inactive_texture, active_texture, position=(0, 0), rotation=0):
         super().__init__(position, rotation)
-        self.inactive_texture = pygame.image.load(resource_path(inactive_texture))
-        self.active_texture = pygame.image.load(resource_path(active_texture))
+        self.inactive_texture = asset_surface(inactive_texture)
+        self.active_texture = asset_surface(active_texture)
         self.height = self.active_texture.get_height()
         self.current_texture = self.inactive_texture
 
@@ -1049,7 +997,7 @@ class MenuContainer:
             )
 
     def update(self):
-        pass  # logic for updating the menu like input handling goes here
+        pass
 
 
 class Menu:

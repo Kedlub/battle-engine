@@ -4,16 +4,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A pygame-based engine for creating Undertale-inspired battle sequences. Python 3.12+, managed with uv.
+A pygame-based engine for creating Undertale-inspired battle sequences. Python 3.12+, managed with uv. Installable as the `battle_engine` package (src layout with hatchling).
 
 ## Commands
 
 ```bash
-uv sync              # Install dependencies
+uv sync              # Install dependencies (editable install)
 uv run python launch.py  # Run the example Papyrus battle
 ```
 
 No test suite or linter is configured.
+
+## Project Structure
+
+```
+src/battle_engine/       # Installable package
+  __init__.py            # Public API exports
+  _assets.py             # Asset loading via importlib.resources
+  game.py                # Game loop, GameMode base class
+  battle.py              # Battle system (states, enemies, UI)
+  player.py              # Player stats and items
+  util.py                # Singletons, interpolation, text rendering
+  constants.py           # Input constants, screen dimensions
+  overworld.py           # Overworld stub
+  assets/                # Bundled engine assets
+    battle/              # UI sprites (buttons, soul, target UI, hit frames)
+    fonts/               # DTM-Sans, undertale-attack-font, undertale-in-game-hud-font
+examples/
+  papyrus/               # Example Papyrus battle
+    main.py
+    assets/papyrus.png
+  testmode.py            # Test mode example
+launch.py                # Entry point for Papyrus example
+```
 
 ## Architecture
 
@@ -29,7 +52,7 @@ The engine uses a **GameMode** pattern where `Game` (singleton) runs the main lo
 - `TargetState` → timing-based attack minigame
 - `DefendingState` → dodge enemy projectiles (runs a `Round`)
 
-### Key classes (all in `modules/`)
+### Key classes (all in `src/battle_engine/`)
 
 - **`Game`** (`game.py`) — Singleton. Main loop (30 FPS), window management, screen shake, fullscreen toggle (F4), manages `InterpolationManager` for tweened animations.
 - **`Battle`** (`battle.py`) — Extends `GameMode`. Contains enemies, buttons, battle box, player object, and the state stack. Subclass this to create custom battles.
@@ -40,6 +63,13 @@ The engine uses a **GameMode** pattern where `Game` (singleton) runs the main lo
 - **`InterpolationManager` / `Interpolation`** (`util.py`) — Tweening system. Supports LINEAR, EASE_IN, EASE_OUT, EASE_IN_OUT. Animates any object attribute over time.
 - **`ProgressiveText`** (`util.py`) — Typewriter-style text with inline commands: `[color:RRGGBB]`, `[font:name]`, `[charspacing:N]`, `[instant]`, `[asterisk]`.
 
+### Asset loading
+
+Engine assets are bundled inside the package at `src/battle_engine/assets/` and loaded via `importlib.resources` through helpers in `_assets.py`:
+- `asset_surface(relative)` — load a pygame Surface (e.g. `asset_surface("battle/soul/soul.png")`)
+- `asset_font_path(relative)` — get filesystem path for a font
+- `asset_frames(prefix)` — load numbered frame sequences (e.g. `asset_frames("battle/hit/knife")`)
+
 ### Singleton pattern
 
 `Game`, `Player`, `PlayerObject`, and `InterpolationManager` are all singletons (via `Singleton` metaclass in `util.py`). They're accessed by calling the constructor anywhere: `Game()`, `Player()`, etc.
@@ -49,13 +79,9 @@ The engine uses a **GameMode** pattern where `Game` (singleton) runs the main lo
 1. Subclass `Battle` — override `select_next_round()` to return a `Round` subclass, and `post_init()` to set up enemies and encounter text.
 2. Subclass `Enemy` — set sprite, position, name, health, and acts.
 3. Subclass `Round` — override `round_update()` to spawn `BattleObject` projectiles with movement/collision logic.
-4. See `examples/papyrus.py` for a complete reference.
+4. See `examples/papyrus/main.py` for a complete reference.
 
-### Assets
-
-- `assets/battle/` — UI sprites (buttons, soul, target UI, hit frames)
-- `assets/fonts/` — DTM-Sans (default), undertale-attack-font, undertale-in-game-hud-font
-- Custom fonts registered via `register_font()` in `util.py`
+All imports come from the top-level package: `from battle_engine import Battle, Enemy, Round`
 
 ### Input constants (`constants.py`)
 

@@ -1,6 +1,6 @@
-import sys
-import os
 import pygame
+
+from battle_engine._assets import asset_font_path
 
 
 class Singleton(type):
@@ -140,7 +140,7 @@ class ProgressiveText:
                 y_offset,
             )
             styled_texts.append(styled_text)
-            
+
             x_offset += char_width + current_char_spacing
 
         for styled_text in styled_texts:
@@ -175,15 +175,6 @@ class ProgressiveText:
 
         if self.instant_command:
             self.current_text = self.target_text_clean
-
-
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
 
 
 class Interpolation:
@@ -252,17 +243,6 @@ class InterpolationManager(metaclass=Singleton):
         ]
 
 
-def resource_path(relative_path):
-    """Get absolute path to resource, works for dev and for PyInstaller"""
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
-
-
 def draw_gradient(surface, alpha, num_blocks, color, max_height):
     width = surface.get_width()
     height = surface.get_height()
@@ -276,19 +256,17 @@ def draw_gradient(surface, alpha, num_blocks, color, max_height):
         )
 
 
-font_path = resource_path("assets/fonts/DTM-Sans.otf")
-
 font_dictionary = {
-    "default": resource_path("assets/fonts/DTM-Sans.otf"),
-    "attack": resource_path("assets/fonts/undertale-attack-font.ttf"),
-    "hud": resource_path("assets/fonts/undertale-in-game-hud-font.ttf"),
+    "default": asset_font_path("fonts/DTM-Sans.otf"),
+    "attack": asset_font_path("fonts/undertale-attack-font.ttf"),
+    "hud": asset_font_path("fonts/undertale-in-game-hud-font.ttf"),
 }
 
 font_cache = {}
 
 
 def register_font(font_name, font_path):
-    font_dictionary[font_name] = resource_path(font_path)
+    font_dictionary[font_name] = font_path
 
 
 def load_font(name, size):

@@ -1,9 +1,6 @@
-from examples.papyrus import PapyrusBattle
-from modules.battle import Battle
-from modules.game import Game
-from modules.testmode import TestMode
+from battle_engine import Game
+from examples.papyrus.main import PapyrusBattle
 
 game_instance = Game()
-test_mode = PapyrusBattle()
-game_instance.set_mode(test_mode)
+game_instance.set_mode(PapyrusBattle())
 game_instance.run()

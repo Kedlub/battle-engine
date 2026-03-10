@@ -5,7 +5,7 @@ import sys
 import pygame
 from pygame._sdl2 import Window
 
-from modules.util import InterpolationManager, Singleton
+from .util import InterpolationManager, Singleton
 
 DESIGN_RESOLUTION = (640, 480)
 BORDERLESS = os.name == "nt"
@@ -13,10 +13,7 @@ BORDERLESS = os.name == "nt"
 os.environ["SDL_VIDEO_CENTERED"] = "1"
 
 
-# GameMode is an abstract class that represents the game state and processes necessary game actions such as
-# rendering, updating, and handling input events.
 class GameMode:
-    # Do basic variable initialization here, but leave
     def __init__(self, game):
         self.game = game
         pass

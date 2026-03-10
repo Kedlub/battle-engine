@@ -1,15 +1,13 @@
 import pygame
 import math
-from modules.util import draw_gradient, draw_text
 
-from modules.game import GameMode
+from battle_engine import GameMode, draw_gradient, draw_text
 
 min_yOffset = 0.0
 max_yOffset = 50.0
 amplitude = (max_yOffset - min_yOffset) / 2
 
 
-# TestMode - A derived class from GameMode that runs a specialized game loop for a testing environment#
 class TestMode(GameMode):
     def __init__(self, game):
         super().__init__(game)
@@ -31,7 +29,7 @@ class TestMode(GameMode):
             (255, 255, 255),
             surface.get_width() // 2,
             surface.get_height() // 2,
-            centered=True,
+            anchor="center",
             rotation=self.angle,
         )
         pass
@@ -49,5 +47,4 @@ class TestMode(GameMode):
         pass
 
     def process_input(self, events):
-        # Implement input handling in Battle mode here
         pass

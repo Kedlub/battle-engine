@@ -1,4 +1,4 @@
-from modules.util import Singleton
+from .util import Singleton
 
 
 class Player(metaclass=Singleton):

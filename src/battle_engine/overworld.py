@@ -1,4 +1,4 @@
-from modules.game import GameMode
+from .game import GameMode
 
 
 class Overworld(GameMode):
@@ -9,12 +9,10 @@ class Overworld(GameMode):
         self.game = game
 
     def render(self, screen):
-        # Implement 2D topdown world rendering here
         pass
 
     def update(self, screen):
         pass
 
     def process_input(self, events):
-        # Implement player movement and input handling here
         pass
