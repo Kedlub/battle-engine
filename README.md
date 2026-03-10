@@ -3,14 +3,14 @@
 A work-in-progress pygame based engine for creating your own Undertale-inspired battles.
 
 ## Requirements
-This project uses the `poetry` dependency manager, so requirements can be installed by `poetry install`
+This project uses `uv` for dependency management. Install dependencies with `uv sync`.
 
 ## Usage
-Battles are create by extending the `Battle` class, and then sending it as a game mode to `Game`
+Battles are created by extending the `Battle` class, and then sending it as a game mode to `Game`.
 
-Example battles can be found in `examples` folder
+Example battles can be found in the `examples` folder.
 
-One of the example battles can be ran by the `launch.py` file, using `pipenv run python launch.py`
+One of the example battles can be run with `uv run python launch.py`.
 
 ## Features and roadmap
 - [x] Battle loop

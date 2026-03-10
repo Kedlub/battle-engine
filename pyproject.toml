@@ -1,17 +1,11 @@
-[tool.poetry]
+[project]
 name = "battle-engine"
 version = "0.1.0"
 description = ""
-authors = ["Kedlub <jakubkyzr@gmail.com>"]
-license = "GPL-3.0"
+authors = [{name = "Kedlub", email = "jakubkyzr@gmail.com"}]
+license = {text = "GPL-3.0"}
 readme = "README.md"
-package-mode = false
-
-[tool.poetry.dependencies]
-python = "^3.12"
-pygame = "^2.6.1"
-
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires-python = ">=3.12"
+dependencies = [
+    "pygame>=2.6.1,<3",
+]
