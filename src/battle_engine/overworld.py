@@ -2,17 +2,14 @@ from .game import GameMode
 
 
 class Overworld(GameMode):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, game):
+        super().__init__(game)
 
-    def init(self, game):
-        self.game = game
-
-    def render(self, screen):
+    def render(self, surface):
         pass
 
-    def update(self, screen):
+    def update(self, surface):
         pass
 
-    def process_input(self, events):
+    def process_input(self, event):
         pass

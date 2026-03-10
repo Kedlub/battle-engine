@@ -1,9 +1,9 @@
 import pygame
 
-from ..singleton import Singleton
 from .._assets import asset_surface
 from ..game import Game
 from ..player import Player
+from ..singleton import Singleton
 
 
 class PlayerObject(pygame.sprite.Sprite, metaclass=Singleton):

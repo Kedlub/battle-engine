@@ -5,8 +5,8 @@ import sys
 import pygame
 from pygame._sdl2 import Window
 
-from .singleton import Singleton
 from .interpolation import InterpolationManager
+from .singleton import Singleton
 
 DESIGN_RESOLUTION = (640, 480)
 FPS = 30

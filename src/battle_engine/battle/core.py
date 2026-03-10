@@ -1,15 +1,10 @@
-import pygame
-
-from ..game import GameMode, Game
-from ..player import Player
-from ..constants import CONFIRM_BUTTON, DISMISS_BUTTON, WIDTH
+from .._assets import asset_frames
 from ..drawing import draw_gradient
-from ..fonts import draw_text
-from .._assets import asset_surface, asset_frames
-from ..interpolation import InterpolationManager, Interpolation
-from .ui import PlayerStats, Button, BattleBox
+from ..game import Game, GameMode
+from ..player import Player
 from .objects import PlayerObject
 from .states import ButtonSelectState, DefendingState
+from .ui import BattleBox, Button, PlayerStats
 
 
 class Battle(GameMode):

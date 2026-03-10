@@ -1,7 +1,7 @@
 import pygame
 
 from ..game import Game
-from ..interpolation import InterpolationManager, Interpolation
+from ..interpolation import Interpolation, InterpolationManager
 from .ui import HitVisual
 
 

@@ -4,16 +4,15 @@ from pathlib import Path
 import pygame
 
 from battle_engine import (
-    Battle,
-    Enemy,
-    BattleObject,
-    Round,
-    MenuItem,
-    Game,
-    InterpolationManager,
-    Interpolation,
-    WIDTH,
     HEIGHT,
+    Battle,
+    BattleObject,
+    Enemy,
+    Game,
+    Interpolation,
+    InterpolationManager,
+    MenuItem,
+    Round,
 )
 
 _ASSETS_DIR = Path(__file__).parent / "assets"
@@ -21,7 +20,7 @@ _ASSETS_DIR = Path(__file__).parent / "assets"
 
 class PapyrusBattle(Battle):
     def __init__(self):
-        super(PapyrusBattle, self).__init__()
+        super().__init__()
         self.tick = 0
 
     def select_next_round(self):
@@ -53,10 +52,10 @@ class PapyrusBattle(Battle):
             )
 
     def render(self, surface):
-        super(PapyrusBattle, self).render(surface)
+        super().render(surface)
 
     def update(self, surface):
-        super(PapyrusBattle, self).update(surface)
+        super().update(surface)
         self.tick += 1
         if self.tick == 50:
             InterpolationManager().add_interpolation(
@@ -71,13 +70,13 @@ class PapyrusBattle(Battle):
             )
 
     def process_input(self, event):
-        super(PapyrusBattle, self).process_input(event)
+        super().process_input(event)
 
 
 class PapyrusEnemy(Enemy):
     def __init__(self):
         image = pygame.image.load(str(_ASSETS_DIR / "papyrus.png"))
-        super(PapyrusEnemy, self).__init__(
+        super().__init__(
             image, position=(250, 40), name="Papyrus", health=100
         )
         self.acts = [MenuItem("Wave", self.wave)]
@@ -88,10 +87,10 @@ class PapyrusEnemy(Enemy):
         self.battle.end_round()
 
     def update(self, surface):
-        super(PapyrusEnemy, self).update(surface)
+        super().update(surface)
 
     def render(self, surface):
-        super(PapyrusEnemy, self).render(surface)
+        super().render(surface)
 
 
 class TestBone(BattleObject):
@@ -99,14 +98,14 @@ class TestBone(BattleObject):
         sprite = pygame.Surface((10, 60))
         sprite.fill((255, 255, 255))
         damage = 10
-        super(TestBone, self).__init__(sprite, position, rotation, damage)
+        super().__init__(sprite, position, rotation, damage)
 
     def update(self):
         self.position = [
             int(self.position[0] - (150 * (Game().delta_time / 1000))),
             int(self.position[1]),
         ]
-        super(TestBone, self).update()
+        super().update()
 
     def render(self, surface):
         surface.blit(self.sprite, self.position)
@@ -114,7 +113,7 @@ class TestBone(BattleObject):
 
 class TestRound(Round):
     def __init__(self, battle):
-        super(TestRound, self).__init__(battle)
+        super().__init__(battle)
         self.last_spawn_time = 0
 
     def round_update(self):

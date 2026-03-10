@@ -20,7 +20,7 @@ def asset_font_path(relative: str) -> str:
 
 
 def asset_frames(prefix: str, extension: str = "png") -> list[pygame.Surface]:
-    """Load numbered frame sequences (e.g. prefix='battle/hit/knife' -> knife1.png, knife2.png, ...)."""
+    """Load numbered frame sequences (e.g. knife1.png, knife2.png)."""
     frames = []
     i = 1
     while True:

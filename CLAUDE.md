@@ -13,7 +13,10 @@ uv sync              # Install dependencies (editable install)
 uv run python launch.py  # Run the example Papyrus battle
 ```
 
-No test suite or linter is configured.
+```bash
+uv run ruff check src/ examples/ tests/  # Lint
+uv run pytest -v                          # Run tests
+```
 
 ## Project Structure
 

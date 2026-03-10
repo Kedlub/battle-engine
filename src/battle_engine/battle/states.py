@@ -3,7 +3,6 @@ import pygame
 from ..constants import CONFIRM_BUTTON, DISMISS_BUTTON
 from ..game import Game
 from .ui import Menu, MenuContainer, MenuItem, TargetUI
-from .objects import PlayerObject
 
 
 class BattleState:
@@ -58,7 +57,8 @@ class ButtonSelectState(BattleState):
                     battle.battle_box.set_encounter_text("You don't have any items.")
                 elif battle.selected_button == 3:
                     battle.battle_box.set_encounter_text(
-                        "You tried to spare the enemy, but it didn't seem to understand."
+                        "You tried to spare the enemy, "
+                        "but it didn't seem to understand."
                     )
 
 

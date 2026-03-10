@@ -2,11 +2,11 @@ import random
 
 import pygame
 
-from ..fonts import draw_text, draw_text_size
-from ..text import ProgressiveText
 from .._assets import asset_surface
-from ..interpolation import Interpolation, InterpolationManager
+from ..fonts import draw_text, draw_text_size
 from ..game import Game
+from ..interpolation import Interpolation, InterpolationManager
+from ..text import ProgressiveText
 
 
 class GUIElement:

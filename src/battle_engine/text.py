@@ -84,7 +84,6 @@ class ProgressiveText:
         current_color = self.color
         current_font_name = self.font_name
         current_char_spacing = self.char_spacing
-        line_start_idx = 0
 
         for idx, char in enumerate(self.current_text):
             cmd_list = self.target_command_positions.get(idx)

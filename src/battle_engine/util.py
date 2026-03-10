@@ -1,15 +1,15 @@
-from .singleton import Singleton
-from .interpolation import Interpolation, InterpolationManager
-from .text import ProgressiveText, StyledText
+from .drawing import draw_gradient
 from .fonts import (
-    font_dictionary,
-    font_cache,
-    register_font,
-    load_font,
     draw_text,
     draw_text_size,
+    font_cache,
+    font_dictionary,
+    load_font,
+    register_font,
 )
-from .drawing import draw_gradient
+from .interpolation import Interpolation, InterpolationManager
+from .singleton import Singleton
+from .text import ProgressiveText, StyledText
 
 __all__ = [
     "Singleton",

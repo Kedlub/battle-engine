@@ -1,5 +1,6 @@
-import pygame
 import math
+
+import pygame
 
 from battle_engine import GameMode, draw_gradient, draw_text
 
