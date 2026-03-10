@@ -1,4 +1,4 @@
-from .util import Singleton
+from .singleton import Singleton
 
 
 class Player(metaclass=Singleton):
@@ -10,7 +10,7 @@ class Player(metaclass=Singleton):
         attack=5,
         defense=5,
         level=1,
-        items=[],
+        items=None,
     ):
         self.name = name
         self.health = health
@@ -19,7 +19,7 @@ class Player(metaclass=Singleton):
         self.attack = attack
         self.defense = defense
         self.level = level
-        self.items = items
+        self.items = items if items is not None else []
 
 
 class Item:

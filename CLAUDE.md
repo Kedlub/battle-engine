@@ -19,14 +19,25 @@ No test suite or linter is configured.
 
 ```
 src/battle_engine/       # Installable package
-  __init__.py            # Public API exports
+  __init__.py            # Public API re-exports
   _assets.py             # Asset loading via importlib.resources
-  game.py                # Game loop, GameMode base class
-  battle.py              # Battle system (states, enemies, UI)
-  player.py              # Player stats and items
-  util.py                # Singletons, interpolation, text rendering
   constants.py           # Input constants, screen dimensions
+  game.py                # Game loop, GameMode base class
+  player.py              # Player stats and items
+  singleton.py           # Singleton metaclass
+  interpolation.py       # Interpolation + InterpolationManager
+  text.py                # ProgressiveText + StyledText
+  fonts.py               # Font registry, draw_text, draw_text_size
+  drawing.py             # draw_gradient
+  util.py                # Re-exports from above modules (backward compat)
   overworld.py           # Overworld stub
+  battle/                # Battle system subpackage
+    __init__.py           # Re-exports all battle classes
+    core.py               # Battle, Round
+    states.py             # BattleState, ButtonSelectState, MenuSelectState, TargetState, DefendingState
+    enemy.py              # Enemy
+    objects.py            # PlayerObject, BattleObject
+    ui.py                 # GUIElement, HitVisual, TargetUI, PlayerStats, Button, BattleBox, MenuItem, MenuContainer, Menu
   assets/                # Bundled engine assets
     battle/              # UI sprites (buttons, soul, target UI, hit frames)
     fonts/               # DTM-Sans, undertale-attack-font, undertale-in-game-hud-font
@@ -52,16 +63,16 @@ The engine uses a **GameMode** pattern where `Game` (singleton) runs the main lo
 - `TargetState` → timing-based attack minigame
 - `DefendingState` → dodge enemy projectiles (runs a `Round`)
 
-### Key classes (all in `src/battle_engine/`)
+### Key classes
 
 - **`Game`** (`game.py`) — Singleton. Main loop (30 FPS), window management, screen shake, fullscreen toggle (F4), manages `InterpolationManager` for tweened animations.
-- **`Battle`** (`battle.py`) — Extends `GameMode`. Contains enemies, buttons, battle box, player object, and the state stack. Subclass this to create custom battles.
-- **`Round`** (`battle.py`) — Subclass to define enemy attack patterns. Spawns `BattleObject`s that move and collide with the player soul. Has a `time` counter (delta-based) and `end_turn()`.
-- **`Enemy`** (`battle.py`) — Holds sprite, health, acts, hit animation/shake logic. Health bar uses `Interpolation` for smooth drain.
-- **`PlayerObject`** (`battle.py`) — Singleton sprite (the soul). Moves with arrow keys inside the `BattleBox` bounds. Collision detection via pygame masks.
+- **`Battle`** (`battle/core.py`) — Extends `GameMode`. Contains enemies, buttons, battle box, player object, and the state stack. Subclass this to create custom battles.
+- **`Round`** (`battle/core.py`) — Subclass to define enemy attack patterns. Spawns `BattleObject`s that move and collide with the player soul. Has a `time` counter (delta-based) and `end_turn()`.
+- **`Enemy`** (`battle/enemy.py`) — Holds sprite, health, acts, hit animation/shake logic. Health bar uses `Interpolation` for smooth drain.
+- **`PlayerObject`** (`battle/objects.py`) — Singleton sprite (the soul). Moves with arrow keys inside the `BattleBox` bounds. Collision detection via pygame masks.
 - **`Player`** (`player.py`) — Singleton. Stats: name, health, attack, defense, level, items, invulnerability timer.
-- **`InterpolationManager` / `Interpolation`** (`util.py`) — Tweening system. Supports LINEAR, EASE_IN, EASE_OUT, EASE_IN_OUT. Animates any object attribute over time.
-- **`ProgressiveText`** (`util.py`) — Typewriter-style text with inline commands: `[color:RRGGBB]`, `[font:name]`, `[charspacing:N]`, `[instant]`, `[asterisk]`.
+- **`InterpolationManager` / `Interpolation`** (`interpolation.py`) — Tweening system. Supports LINEAR, EASE_IN, EASE_OUT, EASE_IN_OUT. Animates any object attribute over time.
+- **`ProgressiveText`** (`text.py`) — Typewriter-style text with inline commands: `[color:RRGGBB]`, `[font:name]`, `[charspacing:N]`, `[instant]`, `[asterisk]`.
 
 ### Asset loading
 
@@ -72,7 +83,7 @@ Engine assets are bundled inside the package at `src/battle_engine/assets/` and 
 
 ### Singleton pattern
 
-`Game`, `Player`, `PlayerObject`, and `InterpolationManager` are all singletons (via `Singleton` metaclass in `util.py`). They're accessed by calling the constructor anywhere: `Game()`, `Player()`, etc.
+`Game`, `Player`, `PlayerObject`, and `InterpolationManager` are all singletons (via `Singleton` metaclass in `singleton.py`). They're accessed by calling the constructor anywhere: `Game()`, `Player()`, etc.
 
 ### Creating a new battle
 

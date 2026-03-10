@@ -5,9 +5,11 @@ import sys
 import pygame
 from pygame._sdl2 import Window
 
-from .util import InterpolationManager, Singleton
+from .singleton import Singleton
+from .interpolation import InterpolationManager
 
 DESIGN_RESOLUTION = (640, 480)
+FPS = 30
 BORDERLESS = os.name == "nt"
 
 os.environ["SDL_VIDEO_CENTERED"] = "1"
@@ -16,7 +18,6 @@ os.environ["SDL_VIDEO_CENTERED"] = "1"
 class GameMode:
     def __init__(self, game):
         self.game = game
-        pass
 
     def post_init(self):
         pass
@@ -44,10 +45,9 @@ class Game(metaclass=Singleton):
             int(DESIGN_RESOLUTION[0] * scaling_factor),
             int(DESIGN_RESOLUTION[1] * scaling_factor),
         )
-        self.screen = pygame.display.set_mode((640, 480))
-        self.surface = pygame.Surface((640, 480))
+        self.screen = pygame.display.set_mode(DESIGN_RESOLUTION)
+        self.surface = pygame.Surface(DESIGN_RESOLUTION)
         pygame.display.set_caption("battle-engine")
-        pygame.font.init()
         self.clock = pygame.time.Clock()
         self.shaking_ticks = 0
         self.original_position = None
@@ -129,7 +129,7 @@ class Game(metaclass=Singleton):
 
     def toggle_fullscreen(self):
         if self.fullscreen:
-            self.screen = pygame.display.set_mode((640, 480))
+            self.screen = pygame.display.set_mode(DESIGN_RESOLUTION)
         else:
             self.screen = pygame.display.set_mode(
                 self.native_resolution,
@@ -146,12 +146,7 @@ class Game(metaclass=Singleton):
             self.process_events()
             self.update()
             self.render()
-            self.delta_time = self.clock.tick(30)
+            self.delta_time = self.clock.tick(FPS)
 
         pygame.quit()
         sys.exit()
-
-
-if __name__ == "__main__":
-    game = Game()
-    game.run()

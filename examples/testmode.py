@@ -32,7 +32,6 @@ class TestMode(GameMode):
             anchor="center",
             rotation=self.angle,
         )
-        pass
 
     def update(self, surface):
         self.angle += 2
@@ -44,7 +43,6 @@ class TestMode(GameMode):
         self.y_offset = (
             min_yOffset + amplitude + amplitude * math.sin(2 * math.pi * time)
         )
-        pass
 
     def process_input(self, events):
         pass

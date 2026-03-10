@@ -17,16 +17,11 @@ from battle_engine.battle import (
     TargetUI,
 )
 from battle_engine.player import Player, Item, HealingItem, Weapon, Armor
-from battle_engine.util import (
-    Singleton,
-    Interpolation,
-    InterpolationManager,
-    ProgressiveText,
-    draw_text,
-    draw_text_size,
-    draw_gradient,
-    register_font,
-)
+from battle_engine.singleton import Singleton
+from battle_engine.interpolation import Interpolation, InterpolationManager
+from battle_engine.text import ProgressiveText
+from battle_engine.fonts import draw_text, draw_text_size, register_font
+from battle_engine.drawing import draw_gradient
 from battle_engine.constants import (
     WIDTH,
     HEIGHT,

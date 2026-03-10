@@ -89,14 +89,9 @@ class PapyrusEnemy(Enemy):
 
     def update(self, surface):
         super(PapyrusEnemy, self).update(surface)
-        pass
 
     def render(self, surface):
         super(PapyrusEnemy, self).render(surface)
-        pass
-
-    def process_input(self, event):
-        pass
 
 
 class TestBone(BattleObject):
