@@ -22,6 +22,8 @@ def test_top_level_exports():
             "CONFIRM_BUTTON",
             "DISMISS_BUTTON",
             "Enemy",
+            "EnemyDeathState",
+            "GameOverState",
             "GUIElement",
             "Game",
             "GameMode",
@@ -43,6 +45,7 @@ def test_top_level_exports():
             "Singleton",
             "TargetUI",
             "WIDTH",
+            "VictoryState",
             "Weapon",
             "asset_font_path",
             "asset_frames",
@@ -74,8 +77,11 @@ def test_submodule_exports():
             "BattleState",
             "ButtonSelectState",
             "DefendingState",
+            "EnemyDeathState",
+            "GameOverState",
             "MenuSelectState",
             "TargetState",
+            "VictoryState",
         ],
     )
     _check_attrs("battle_engine.battle.enemy", ["Enemy"])
