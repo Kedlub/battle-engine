@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from .._assets import asset_surface
+from .._assets import asset_frames, asset_surface
 from ..constants import CONFIRM_BUTTON, DISMISS_BUTTON, HEIGHT, WIDTH
 from ..game import Game
 from .ui import Menu, MenuContainer, MenuItem, TargetUI
@@ -150,9 +150,6 @@ class DefendingState(BattleState):
         battle.player_object.update()
         self.current_round.update()
 
-    def show_soul(self) -> bool:
-        return True
-
 
 class _Particle:
     """A particle with position, velocity, gravity, and optional fade."""
@@ -164,12 +161,14 @@ class _Particle:
         y: float,
         gravity: float = 0.0,
         fade: bool = True,
+        vx: float | None = None,
+        vy: float | None = None,
     ) -> None:
         self.surface = surface
         self.x = x
         self.y = y
-        self.vx: float = random.uniform(-0.5, 0.5)
-        self.vy: float = random.uniform(-1.5, -0.3)
+        self.vx = vx if vx is not None else random.uniform(-0.5, 0.5)
+        self.vy = vy if vy is not None else random.uniform(-1.5, -0.3)
         self.alpha: float = 255
         self.gravity = gravity
         self.fade = fade
@@ -198,13 +197,17 @@ class _AnimatedParticle(_Particle):
         y: float,
         gravity: float = 0.0,
         fade: bool = True,
+        vx: float | None = None,
+        vy: float | None = None,
         frame_duration: float = 80,
+        frame_index: int = 0,
     ) -> None:
-        super().__init__(frames[0], x, y, gravity=gravity, fade=fade)
+        super().__init__(frames[0], x, y, gravity=gravity, fade=fade, vx=vx, vy=vy)
         self.frames = frames
         self.frame_timer: float = 0
-        self.frame_index: int = 0
+        self.frame_index = frame_index
         self.frame_duration = frame_duration
+        self.surface = self.frames[self.frame_index]
 
     def update(self) -> None:
         super().update()
@@ -301,11 +304,9 @@ class EnemyDeathState(BattleState):
             pygame.transform.rotate(enemy.sprite, enemy.rotation),
             enemy.position,
         )
-        self.timer: float = 0
 
     def update(self, battle: Battle) -> None:
         delta = Game().delta_time
-        self.timer += delta
 
         if self.phase == self.PHASE_SHATTER:
             self.shatter.update(delta)
@@ -391,9 +392,7 @@ class GameOverState(BattleState):
         self.shards: list[_Particle] = []
 
         # Preload shard assets
-        self._shard_surfaces = [
-            asset_surface(f"battle/soul/break/shard_{i}.png") for i in range(1, 5)
-        ]
+        self._shard_surfaces = asset_frames("battle/soul/break/shard_")
 
         # GAME OVER text sprite (white outlined text)
         self.gameover_sprite = asset_surface("battle/gameover/text.png").convert_alpha()
@@ -407,15 +406,22 @@ class GameOverState(BattleState):
 
     def _spawn_shards(self) -> None:
         """Create animated shard particles from the break sprite center."""
-        cx, cy = self.soul_center
-        frames = [s.copy() for s in self._shard_surfaces]
+        cx, cy = float(self.soul_center[0]), float(self.soul_center[1])
+        n_frames = len(self._shard_surfaces)
         for _ in range(5):
-            p = _AnimatedParticle(frames, float(cx), float(cy), gravity=0.3, fade=False)
-            p.vx = random.uniform(-3.0, 3.0)
-            p.vy = random.uniform(-4.0, -1.0)
-            p.frame_index = random.randint(0, len(frames) - 1)
-            p.surface = frames[p.frame_index]
-            self.shards.append(p)
+            frames = [s.copy() for s in self._shard_surfaces]
+            self.shards.append(
+                _AnimatedParticle(
+                    frames,
+                    cx,
+                    cy,
+                    gravity=0.3,
+                    fade=False,
+                    vx=random.uniform(-3.0, 3.0),
+                    vy=random.uniform(-4.0, -1.0),
+                    frame_index=random.randint(0, n_frames - 1),
+                )
+            )
 
     def update(self, battle: Battle) -> None:
         dt = Game().delta_time
