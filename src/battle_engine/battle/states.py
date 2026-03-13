@@ -154,8 +154,8 @@ class DefendingState(BattleState):
         return True
 
 
-class _DustParticle:
-    """A row of pixels that has broken off and drifts upward."""
+class _Particle:
+    """A particle with position, velocity, gravity, and optional fade."""
 
     def __init__(
         self,
@@ -184,9 +184,35 @@ class _DustParticle:
     def render(self, surface: pygame.Surface) -> None:
         if self.alpha <= 0:
             return
-        frag = self.surface.copy()
-        frag.set_alpha(int(self.alpha))
-        surface.blit(frag, (int(self.x), int(self.y)))
+        self.surface.set_alpha(int(self.alpha))
+        surface.blit(self.surface, (int(self.x), int(self.y)))
+
+
+class _AnimatedParticle(_Particle):
+    """A particle that cycles through animation frames."""
+
+    def __init__(
+        self,
+        frames: list[pygame.Surface],
+        x: float,
+        y: float,
+        gravity: float = 0.0,
+        fade: bool = True,
+        frame_duration: float = 80,
+    ) -> None:
+        super().__init__(frames[0], x, y, gravity=gravity, fade=fade)
+        self.frames = frames
+        self.frame_timer: float = 0
+        self.frame_index: int = 0
+        self.frame_duration = frame_duration
+
+    def update(self) -> None:
+        super().update()
+        self.frame_timer += Game().delta_time
+        if self.frame_timer >= self.frame_duration:
+            self.frame_timer -= self.frame_duration
+            self.frame_index = (self.frame_index + 1) % len(self.frames)
+            self.surface = self.frames[self.frame_index]
 
 
 class _ShatterEffect:
@@ -208,7 +234,7 @@ class _ShatterEffect:
         self.height = h
         # Copy sprite so we can erase rows progressively
         self.remaining = sprite.copy()
-        self.particles: list[_DustParticle] = []
+        self.particles: list[_Particle] = []
         self.timer: float = 0
         self.next_row: int = 0  # next row to dissolve (from top)
         self.finished = False
@@ -238,7 +264,7 @@ class _ShatterEffect:
 
             px = self.position[0]
             py = self.position[1] + self.next_row
-            self.particles.append(_DustParticle(strip, px, py))
+            self.particles.append(_Particle(strip, px, py))
 
             self.next_row = row_end
 
@@ -347,6 +373,13 @@ class GameOverState(BattleState):
         player_object = Game().battle.player_object
         self.soul_center = player_object.rect.center
 
+        # Pre-render the static soul sprite for blackout phase
+        self.soul_snapshot = pygame.transform.rotate(
+            player_object.sprite, player_object.rotation
+        )
+        self.soul_snapshot.set_alpha(255)
+        self.soul_rect = self.soul_snapshot.get_rect(center=self.soul_center)
+
         # Break sprite (20x16) — both halves in one image
         self.break_sprite = asset_surface("battle/soul/break/break.png")
         bw = self.break_sprite.get_width()
@@ -355,28 +388,33 @@ class GameOverState(BattleState):
         self.break_pos = (cx - bw // 2, cy - bh // 2)
 
         # Shard particles for shatter phase
-        self.shards: list[_DustParticle] = []
+        self.shards: list[_Particle] = []
+
+        # Preload shard assets
+        self._shard_surfaces = [
+            asset_surface(f"battle/soul/break/shard_{i}.png") for i in range(1, 5)
+        ]
 
         # GAME OVER text sprite (white outlined text)
         self.gameover_sprite = asset_surface("battle/gameover/text.png").convert_alpha()
         self.gameover_alpha: float = 0
+        self.gameover_x = (WIDTH - self.gameover_sprite.get_width()) // 2
+        self.gameover_y = (HEIGHT - self.gameover_sprite.get_height()) // 2 - 30
 
         # Black overlay
         self.black_surface = pygame.Surface((WIDTH, HEIGHT))
         self.black_surface.fill((0, 0, 0))
 
     def _spawn_shards(self) -> None:
-        """Create shard particles from the break sprite center."""
-        shard_surfaces = [
-            asset_surface(f"battle/soul/break/shard_{i}.png") for i in range(1, 5)
-        ]
+        """Create animated shard particles from the break sprite center."""
         cx, cy = self.soul_center
-        for surf in shard_surfaces:
-            p = _DustParticle(
-                surf.copy(), float(cx), float(cy), gravity=0.3, fade=False
-            )
+        frames = [s.copy() for s in self._shard_surfaces]
+        for _ in range(5):
+            p = _AnimatedParticle(frames, float(cx), float(cy), gravity=0.3, fade=False)
             p.vx = random.uniform(-3.0, 3.0)
             p.vy = random.uniform(-4.0, -1.0)
+            p.frame_index = random.randint(0, len(frames) - 1)
+            p.surface = frames[p.frame_index]
             self.shards.append(p)
 
     def update(self, battle: Battle) -> None:
@@ -412,14 +450,7 @@ class GameOverState(BattleState):
         surface.blit(self.black_surface, (0, 0))
 
         if self.phase == self.PHASE_BLACKOUT:
-            # Just the soul heart, centered
-            player_object = Game().battle.player_object
-            player_object.sprite.set_alpha(255)
-            rotated = pygame.transform.rotate(
-                player_object.sprite, player_object.rotation
-            )
-            rect = rotated.get_rect(center=self.soul_center)
-            surface.blit(rotated, rect)
+            surface.blit(self.soul_snapshot, self.soul_rect)
 
         elif self.phase == self.PHASE_BREAK:
             surface.blit(self.break_sprite, self.break_pos)
@@ -429,11 +460,8 @@ class GameOverState(BattleState):
                 shard.render(surface)
 
         if self.phase == self.PHASE_GAMEOVER:
-            go_surf = self.gameover_sprite.copy()
-            go_surf.set_alpha(int(self.gameover_alpha))
-            go_x = (WIDTH - self.gameover_sprite.get_width()) // 2
-            go_y = (HEIGHT - self.gameover_sprite.get_height()) // 2 - 30
-            surface.blit(go_surf, (go_x, go_y))
+            self.gameover_sprite.set_alpha(int(self.gameover_alpha))
+            surface.blit(self.gameover_sprite, (self.gameover_x, self.gameover_y))
 
     def show_soul(self) -> bool:
         return False
@@ -455,14 +483,10 @@ class VictoryState(BattleState):
             parts.append(f"  You earned {exp} EXP.")
         if gold > 0:
             parts.append(f"  You earned {gold} gold.")
-        self.reward_text = "\n".join(parts)
-        self._text_set = False
+        reward_text = "\n".join(parts)
+        Game().battle.battle_box.set_encounter_text(reward_text)
 
     def update(self, battle: Battle) -> None:
-        if not self._text_set:
-            battle.battle_box.set_encounter_text(self.reward_text)
-            self._text_set = True
-
         if self.confirmed:
             from ..player import Player
 

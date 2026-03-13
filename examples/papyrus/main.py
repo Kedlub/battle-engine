@@ -29,7 +29,6 @@ class PapyrusBattle(Battle):
     def post_init(self):
         self.enemies = [PapyrusEnemy()]
         self.battle_box.set_encounter_text("A wild papyrus appeared!")
-        self.player_stats.player.health = 10
         InterpolationManager().add_interpolation(
             Interpolation(
                 self.player_stats,
