@@ -313,7 +313,7 @@ class BattleBox(GUIElement):
 
     def set_encounter_text(self, text: str, blip_sound: str | None = None) -> None:
         if blip_sound is not None:
-            self.text.blip_sound = blip_sound
+            self.text._blip_sound_default = blip_sound
         self.text.set_text(text)
 
     def is_encounter_text_finished(self) -> bool:

@@ -81,7 +81,9 @@ class SoundManager(metaclass=Singleton):
         except pygame.error:
             pass
 
-    def play(self, name: str) -> pygame.mixer.Channel | None:
+    def play(
+        self, name: str, channel: pygame.mixer.Channel | None = None
+    ) -> pygame.mixer.Channel | None:
         sound = self._sounds.get(name)
         if sound is None:
             return None
@@ -89,6 +91,9 @@ class SoundManager(metaclass=Singleton):
         volume = self._volumes.get(category, 1.0)
         sound.set_volume(volume)
         try:
+            if channel is not None:
+                channel.play(sound)
+                return channel
             return sound.play()
         except pygame.error:
             return None

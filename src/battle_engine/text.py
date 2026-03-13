@@ -56,6 +56,7 @@ class ProgressiveText:
         self.asterisk: bool = False
         self.target_command_positions: dict[int, list[str]] = {}
         self.target_text_clean: str = ""
+        self._blip_sound_default: str | None = blip_sound
         self.blip_sound: str | None = blip_sound
         self._blip_channel: pygame.mixer.Channel | None = None
         self.set_text(target_text)
@@ -113,16 +114,9 @@ class ProgressiveText:
                 if self.blip_sound and not self.instant_command and not char.isspace():
                     from .sound import SoundManager
 
-                    sm = SoundManager()
-                    sound = sm._sounds.get(self.blip_sound)
-                    if sound is not None:
-                        if self._blip_channel is None:
-                            self._blip_channel = pygame.mixer.find_channel()
-                        if self._blip_channel is not None:
-                            category = sm._categories.get(self.blip_sound)
-                            if category is not None:
-                                sound.set_volume(sm.get_volume(category))
-                            self._blip_channel.play(sound)
+                    if self._blip_channel is None:
+                        self._blip_channel = pygame.mixer.find_channel()
+                    SoundManager().play(self.blip_sound, channel=self._blip_channel)
         elif not self.finished:
             self.finished = True
 
@@ -208,7 +202,8 @@ class ProgressiveText:
         self.target_text = text
         self.current_text = ""
 
-        # Pick a concrete default blip variant for this text
+        # Reset blip sound from configured default, then resolve sentinel
+        self.blip_sound = self._blip_sound_default
         if self.blip_sound == "txt_default":
             self.blip_sound = random.choice(["txt_default1", "txt_default2"])
 
