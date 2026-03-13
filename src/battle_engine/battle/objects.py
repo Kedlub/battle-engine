@@ -113,6 +113,9 @@ class BattleObject:
             )
             self.player_stats.player.invulnerability_time = 1000
             Game().shake(20)
+            from ..sound import SoundManager
+
+            SoundManager().play("damage")
 
     def render(self, surface: pygame.Surface) -> None:
         pass

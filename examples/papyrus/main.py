@@ -13,6 +13,8 @@ from battle_engine import (
     InterpolationManager,
     MenuItem,
     Round,
+    SoundCategory,
+    SoundManager,
 )
 
 _ASSETS_DIR = Path(__file__).parent / "assets"
@@ -27,6 +29,11 @@ class PapyrusBattle(Battle):
         return TestRound(self)
 
     def post_init(self):
+        SoundManager().register_from_file(
+            "txt_papyrus",
+            str(_ASSETS_DIR / "snd_txtpap.wav"),
+            SoundCategory.TEXT,
+        )
         self.enemies = [PapyrusEnemy()]
         self.battle_box.set_encounter_text("A wild papyrus appeared!")
         InterpolationManager().add_interpolation(
