@@ -118,6 +118,14 @@ class ProgressiveText:
                     elif key == "charspacing" and value is not None:
                         current_char_spacing = int(value)
 
+            if char == "\n":
+                line_height = draw_text_size(
+                    "A", self.font_size, font_name=current_font_name
+                )[1]
+                x_offset = self.x
+                y_offset += line_height
+                continue
+
             char_width, char_height = draw_text_size(
                 char, self.font_size, font_name=current_font_name
             )

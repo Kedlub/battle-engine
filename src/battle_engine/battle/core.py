@@ -8,7 +8,13 @@ from ..game import Game, GameMode
 from ..player import Player
 from .enemy import Enemy
 from .objects import BattleObject, PlayerObject
-from .states import BattleState, ButtonSelectState, DefendingState
+from .states import (
+    BattleState,
+    ButtonSelectState,
+    DefendingState,
+    GameOverState,
+    VictoryState,
+)
 from .ui import BattleBox, Button, PlayerStats
 
 
@@ -32,6 +38,8 @@ class Battle(GameMode):
         self.add_default_buttons()
         self.hit_visual: list[pygame.Surface] = asset_frames("battle/hit/knife")
         self.objects: list[BattleObject] = []
+        self._defeated_enemies: list[Enemy] = []
+        self._game_over: bool = False
 
     def post_init(self) -> None:
         pass
@@ -58,6 +66,16 @@ class Battle(GameMode):
 
             state = TargetState(enemy)
             self.gameStateStack.append(state)
+
+    def on_victory(self) -> None:
+        """Called when all enemies are defeated. Override for custom behavior."""
+        total_exp = sum(e.exp_reward for e in self._defeated_enemies)
+        total_gold = sum(e.gold_reward for e in self._defeated_enemies)
+        self.gameStateStack.append(VictoryState(total_exp, total_gold))
+
+    def on_exit(self) -> None:
+        """Called to leave the battle. Override to transition elsewhere."""
+        Game().running = False
 
     def use_item(self, item: str) -> None:
         pass
@@ -89,7 +107,8 @@ class Battle(GameMode):
         for button in self.buttons:
             button.render(surface)
         for enemy in self.enemies:
-            enemy.render(surface)
+            if not enemy.dead:
+                enemy.render(surface)
         self.player_stats.render(surface)
         self.battle_box.render(surface)
         if self.gameStateStack:
@@ -107,6 +126,20 @@ class Battle(GameMode):
         for obj in self.objects:
             obj.update()
         self.battle_box.update()
+
+        # Track defeated enemies for reward calculation
+        for enemy in self.enemies:
+            if enemy.dead and enemy not in self._defeated_enemies:
+                self._defeated_enemies.append(enemy)
+
+        # Central player death check (takes priority over everything)
+        if (
+            not self._game_over
+            and self.player_stats.player.health <= 0
+            and not isinstance(self.gameStateStack[-1], GameOverState)
+        ):
+            self._game_over = True
+            self.gameStateStack.append(GameOverState())
 
     def select_button(self, button: int) -> None:
         self.buttons[self.selected_button].set_active(False)

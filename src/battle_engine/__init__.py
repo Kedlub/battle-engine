@@ -6,6 +6,8 @@ from battle_engine.battle import (
     BattleState,
     Button,
     Enemy,
+    EnemyDeathState,
+    GameOverState,
     GUIElement,
     HitVisual,
     Menu,
@@ -15,6 +17,7 @@ from battle_engine.battle import (
     PlayerStats,
     Round,
     TargetUI,
+    VictoryState,
 )
 from battle_engine.constants import (
     CONFIRM_BUTTON,
@@ -41,6 +44,8 @@ __all__ = [
     "CONFIRM_BUTTON",
     "DISMISS_BUTTON",
     "Enemy",
+    "EnemyDeathState",
+    "GameOverState",
     "GUIElement",
     "Game",
     "GameMode",
@@ -62,6 +67,7 @@ __all__ = [
     "Singleton",
     "TargetUI",
     "WIDTH",
+    "VictoryState",
     "Weapon",
     "asset_font_path",
     "asset_frames",

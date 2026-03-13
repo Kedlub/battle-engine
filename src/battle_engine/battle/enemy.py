@@ -17,6 +17,8 @@ class Enemy:
         position: tuple[int, int] = (0, 0),
         rotation: int = 0,
         health: int = 20,
+        exp_reward: int = 0,
+        gold_reward: int = 0,
     ) -> None:
         self.sprite = sprite
         self.position = position
@@ -26,6 +28,9 @@ class Enemy:
         self.current_health: float = health
         self.max_health = health
         self.name = name
+        self.exp_reward = exp_reward
+        self.gold_reward = gold_reward
+        self.dead: bool = False
         self.acts: list[Any] = []
         self.hit_power: float = 0
         self.shake_ticks: int = 0
@@ -56,7 +61,7 @@ class Enemy:
                 self.shake_dist = int(power_ratio * (self.sprite.get_width() / 2))
                 self.shake_speed = max(1, int(20 * power_ratio))
                 self.shake_ticks = 6 * self.shake_speed
-                self.health -= self.hit_power
+                self.health = max(0, self.health - self.hit_power)
                 InterpolationManager().add_interpolation(
                     Interpolation(
                         self, "current_health", self.current_health, self.health, 1000
@@ -80,10 +85,22 @@ class Enemy:
                 self.shake_dist = 0
                 self.position = self.base_position
                 self.being_attacked = False
-                from .states import DefendingState
+                from .states import DefendingState, EnemyDeathState
 
-                Game().battle.gameStateStack[-1].target.hide()
-                Game().battle.gameStateStack.append(DefendingState())
+                battle = Game().battle
+                battle.gameStateStack[-1].target.hide()
+                # Fix: pop TargetState before pushing next state
+                battle.gameStateStack.pop()
+
+                if self.health <= 0:
+                    self.dead = True
+                    battle.gameStateStack.append(EnemyDeathState(self))
+                else:
+                    battle.gameStateStack.append(DefendingState())
+
+    def on_death(self) -> str | None:
+        """Override to return death flavor text. Default returns None."""
+        return None
 
     def hit(self, damage: float) -> None:
         self.being_attacked = True

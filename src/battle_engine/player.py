@@ -13,6 +13,8 @@ class Player(metaclass=Singleton):
         defense: int = 5,
         level: int = 1,
         items: list[Item] | None = None,
+        exp: int = 0,
+        gold: int = 0,
     ) -> None:
         self.name = name
         self.health = health
@@ -22,6 +24,8 @@ class Player(metaclass=Singleton):
         self.defense = defense
         self.level = level
         self.items: list[Item] = items if items is not None else []
+        self.exp = exp
+        self.gold = gold
 
 
 class Item:

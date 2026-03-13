@@ -29,6 +29,7 @@ class PapyrusBattle(Battle):
     def post_init(self):
         self.enemies = [PapyrusEnemy()]
         self.battle_box.set_encounter_text("A wild papyrus appeared!")
+        self.player_stats.player.health = 10
         InterpolationManager().add_interpolation(
             Interpolation(
                 self.player_stats,
@@ -76,9 +77,19 @@ class PapyrusBattle(Battle):
 class PapyrusEnemy(Enemy):
     def __init__(self):
         image = pygame.image.load(str(_ASSETS_DIR / "papyrus.png"))
-        super().__init__(image, position=(250, 40), name="Papyrus", health=100)
+        super().__init__(
+            image,
+            position=(250, 40),
+            name="Papyrus",
+            health=100,
+            exp_reward=200,
+            gold_reward=50,
+        )
         self.acts = [MenuItem("Wave", self.wave)]
         self.battle = Battle()
+
+    def on_death(self):
+        return "[asterisk] Papyrus has been defeated..."
 
     def wave(self):
         self.battle.battle_box.set_encounter_text("You wave at Papyrus. He waves back.")

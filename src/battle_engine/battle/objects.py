@@ -108,7 +108,9 @@ class BattleObject:
         if self.player_stats.player.invulnerability_time <= 0 and self.collides_with(
             Game().battle.player_object
         ):
-            self.player_stats.player.health -= self.damage
+            self.player_stats.player.health = max(
+                0, self.player_stats.player.health - self.damage
+            )
             self.player_stats.player.invulnerability_time = 1000
             Game().shake(20)
 
