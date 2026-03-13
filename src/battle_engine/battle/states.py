@@ -161,11 +161,15 @@ class _DustParticle:
         self.vx: float = random.uniform(-0.5, 0.5)
         self.vy: float = random.uniform(-1.5, -0.3)
         self.alpha: float = 255
+        self.gravity: float = 0
+        self.fade: bool = True
 
     def update(self) -> None:
         self.x += self.vx
         self.y += self.vy
-        self.alpha = max(0, self.alpha - 6)
+        self.vy += self.gravity
+        if self.fade:
+            self.alpha = max(0, self.alpha - 6)
 
     def render(self, surface: pygame.Surface) -> None:
         if self.alpha <= 0:
@@ -357,8 +361,10 @@ class GameOverState(BattleState):
         cx, cy = self.soul_center
         for surf in shard_surfaces:
             p = _DustParticle(surf.copy(), float(cx), float(cy))
-            p.vx = random.uniform(-2.0, 2.0)
-            p.vy = random.uniform(0.5, 3.0)
+            p.vx = random.uniform(-3.0, 3.0)
+            p.vy = random.uniform(-4.0, -1.0)
+            p.gravity = 0.3
+            p.fade = False
             p.alpha = 255
             self.shards.append(p)
 
