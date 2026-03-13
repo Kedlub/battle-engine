@@ -28,6 +28,9 @@ class BattleState:
     def show_soul(self) -> bool:
         return True
 
+    def show_objects(self) -> bool:
+        return True
+
 
 class ButtonSelectState(BattleState):
     def render(self, battle: Battle, surface: pygame.Surface) -> None:
@@ -154,15 +157,22 @@ class DefendingState(BattleState):
 class _DustParticle:
     """A row of pixels that has broken off and drifts upward."""
 
-    def __init__(self, surface: pygame.Surface, x: float, y: float) -> None:
+    def __init__(
+        self,
+        surface: pygame.Surface,
+        x: float,
+        y: float,
+        gravity: float = 0.0,
+        fade: bool = True,
+    ) -> None:
         self.surface = surface
         self.x = x
         self.y = y
         self.vx: float = random.uniform(-0.5, 0.5)
         self.vy: float = random.uniform(-1.5, -0.3)
         self.alpha: float = 255
-        self.gravity: float = 0
-        self.fade: bool = True
+        self.gravity = gravity
+        self.fade = fade
 
     def update(self) -> None:
         self.x += self.vx
@@ -286,6 +296,8 @@ class EnemyDeathState(BattleState):
                 self.phase = self.PHASE_DONE
 
         if self.phase == self.PHASE_DONE:
+            battle._total_exp += self.enemy.exp_reward
+            battle._total_gold += self.enemy.gold_reward
             if self.enemy in battle.enemies:
                 battle.enemies.remove(self.enemy)
             battle.gameStateStack.pop()
@@ -313,7 +325,7 @@ class EnemyDeathState(BattleState):
 
 
 class GameOverState(BattleState):
-    """Undertale-accurate game over: blackout → break → shatter → GAME OVER."""
+    """Undertale-accurate game over: blackout -> break -> shatter -> GAME OVER."""
 
     PHASE_BLACKOUT = 0
     PHASE_BREAK = 1
@@ -360,12 +372,11 @@ class GameOverState(BattleState):
         ]
         cx, cy = self.soul_center
         for surf in shard_surfaces:
-            p = _DustParticle(surf.copy(), float(cx), float(cy))
+            p = _DustParticle(
+                surf.copy(), float(cx), float(cy), gravity=0.3, fade=False
+            )
             p.vx = random.uniform(-3.0, 3.0)
             p.vy = random.uniform(-4.0, -1.0)
-            p.gravity = 0.3
-            p.fade = False
-            p.alpha = 255
             self.shards.append(p)
 
     def update(self, battle: Battle) -> None:
@@ -394,7 +405,7 @@ class GameOverState(BattleState):
             t = min(1.0, self.timer / self.GAMEOVER_FADE_DURATION)
             self.gameover_alpha = t * 255
             if self.timer >= self.GAMEOVER_HOLD_DURATION:
-                Game().running = False
+                battle.on_game_over()
 
     def render(self, battle: Battle, surface: pygame.Surface) -> None:
         # Black background for all phases
@@ -427,6 +438,9 @@ class GameOverState(BattleState):
     def show_soul(self) -> bool:
         return False
 
+    def show_objects(self) -> bool:
+        return False
+
 
 class VictoryState(BattleState):
     """Shows reward text and waits for confirm to exit battle."""
@@ -450,6 +464,10 @@ class VictoryState(BattleState):
             self._text_set = True
 
         if self.confirmed:
+            from ..player import Player
+
+            Player().exp += self.exp
+            Player().gold += self.gold
             battle.gameStateStack.pop()
             battle.on_exit()
 

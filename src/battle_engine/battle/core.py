@@ -38,8 +38,8 @@ class Battle(GameMode):
         self.add_default_buttons()
         self.hit_visual: list[pygame.Surface] = asset_frames("battle/hit/knife")
         self.objects: list[BattleObject] = []
-        self._defeated_enemies: list[Enemy] = []
-        self._game_over: bool = False
+        self._total_exp: int = 0
+        self._total_gold: int = 0
 
     def post_init(self) -> None:
         pass
@@ -69,9 +69,11 @@ class Battle(GameMode):
 
     def on_victory(self) -> None:
         """Called when all enemies are defeated. Override for custom behavior."""
-        total_exp = sum(e.exp_reward for e in self._defeated_enemies)
-        total_gold = sum(e.gold_reward for e in self._defeated_enemies)
-        self.gameStateStack.append(VictoryState(total_exp, total_gold))
+        self.gameStateStack.append(VictoryState(self._total_exp, self._total_gold))
+
+    def on_game_over(self) -> None:
+        """Called when the game over sequence ends. Override for retry/reload."""
+        Game().running = False
 
     def on_exit(self) -> None:
         """Called to leave the battle. Override to transition elsewhere."""
@@ -114,7 +116,7 @@ class Battle(GameMode):
         if self.gameStateStack:
             current_state = self.gameStateStack[-1]
             current_state.render(self, surface)
-            if not isinstance(current_state, GameOverState):
+            if current_state.show_objects():
                 for obj in self.objects:
                     obj.render(surface)
             if current_state.show_soul():
@@ -129,18 +131,10 @@ class Battle(GameMode):
             obj.update()
         self.battle_box.update()
 
-        # Track defeated enemies for reward calculation
-        for enemy in self.enemies:
-            if enemy.dead and enemy not in self._defeated_enemies:
-                self._defeated_enemies.append(enemy)
-
         # Central player death check (takes priority over everything)
-        if (
-            not self._game_over
-            and self.player_stats.player.health <= 0
-            and not isinstance(self.gameStateStack[-1], GameOverState)
+        if self.player_stats.player.health <= 0 and not isinstance(
+            self.gameStateStack[-1], GameOverState
         ):
-            self._game_over = True
             self.gameStateStack.append(GameOverState())
 
     def select_button(self, button: int) -> None:
