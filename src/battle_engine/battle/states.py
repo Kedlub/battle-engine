@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from ..constants import CONFIRM_BUTTON, DISMISS_BUTTON
-from ..fonts import draw_text
+from .._assets import asset_surface
+from ..constants import CONFIRM_BUTTON, DISMISS_BUTTON, HEIGHT, WIDTH
 from ..game import Game
 from .ui import Menu, MenuContainer, MenuItem, TargetUI
 
@@ -246,35 +246,6 @@ class _ShatterEffect:
             p.render(surface)
 
 
-def _create_soul_shatter_fragments(
-    sprite: pygame.Surface,
-    position: tuple[int, int],
-    grid_size: int = 3,
-) -> list[_DustParticle]:
-    """Split a small sprite (soul) into grid fragments that drift upward."""
-    w, h = sprite.get_size()
-    frag_w = w // grid_size
-    frag_h = h // grid_size
-    fragments: list[_DustParticle] = []
-
-    for row in range(grid_size):
-        for col in range(grid_size):
-            rect = pygame.Rect(col * frag_w, row * frag_h, frag_w, frag_h)
-            frag_surface = pygame.Surface((frag_w, frag_h), pygame.SRCALPHA)
-            frag_surface.blit(sprite, (0, 0), rect)
-
-            fx = position[0] + col * frag_w
-            fy = position[1] + row * frag_h
-            p = _DustParticle(frag_surface, fx, fy)
-            # Soul fragments scatter outward and fall down
-            p.vx = random.uniform(-2, 2)
-            p.vy = random.uniform(0.5, 3)
-            p.alpha = 255
-            fragments.append(p)
-
-    return fragments
-
-
 class EnemyDeathState(BattleState):
     """Plays enemy death animation, shows optional death text, handles victory check."""
 
@@ -338,59 +309,114 @@ class EnemyDeathState(BattleState):
 
 
 class GameOverState(BattleState):
-    """Player soul shatters, screen fades to black, GAME OVER text."""
+    """Undertale-accurate game over: blackout → break → shatter → GAME OVER."""
 
-    PHASE_SHATTER = 0
-    PHASE_FADE = 1
-    PHASE_TEXT = 2
+    PHASE_BLACKOUT = 0
+    PHASE_BREAK = 1
+    PHASE_SHATTER = 2
+    PHASE_GAMEOVER = 3
+
+    # Timing constants (milliseconds)
+    BLACKOUT_DURATION = 800
+    BREAK_DURATION = 600
+    SHATTER_FADE_DURATION = 2500
+    GAMEOVER_FADE_DURATION = 2000
+    GAMEOVER_HOLD_DURATION = 4000
 
     def __init__(self) -> None:
         super().__init__()
-        self.phase = self.PHASE_SHATTER
-        player_object = Game().battle.player_object
-        soul_sprite = player_object.sprite.copy()
-        soul_pos = (player_object.rect.x, player_object.rect.y)
-        self.fragments = _create_soul_shatter_fragments(soul_sprite, soul_pos)
+        self.phase = self.PHASE_BLACKOUT
         self.timer: float = 0
-        self.fade_alpha: float = 0
-        self.fade_surface: pygame.Surface | None = None
+
+        player_object = Game().battle.player_object
+        self.soul_center = player_object.rect.center
+
+        # Break sprite (20x16) — both halves in one image
+        self.break_sprite = asset_surface("battle/soul/break/break.png")
+        bw = self.break_sprite.get_width()
+        bh = self.break_sprite.get_height()
+        cx, cy = self.soul_center
+        self.break_pos = (cx - bw // 2, cy - bh // 2)
+
+        # Shard particles for shatter phase
+        self.shards: list[_DustParticle] = []
+
+        # GAME OVER text sprite (white outlined text)
+        self.gameover_sprite = asset_surface("battle/gameover/text.png").convert_alpha()
+        self.gameover_alpha: float = 0
+
+        # Black overlay
+        self.black_surface = pygame.Surface((WIDTH, HEIGHT))
+        self.black_surface.fill((0, 0, 0))
+
+    def _spawn_shards(self) -> None:
+        """Create shard particles from the break sprite center."""
+        shard_surfaces = [
+            asset_surface(f"battle/soul/break/shard_{i}.png") for i in range(1, 5)
+        ]
+        cx, cy = self.soul_center
+        for surf in shard_surfaces:
+            p = _DustParticle(surf.copy(), float(cx), float(cy))
+            p.vx = random.uniform(-2.0, 2.0)
+            p.vy = random.uniform(0.5, 3.0)
+            p.alpha = 255
+            self.shards.append(p)
 
     def update(self, battle: Battle) -> None:
-        self.timer += Game().delta_time
+        dt = Game().delta_time
+        self.timer += dt
 
-        if self.phase == self.PHASE_SHATTER:
-            for frag in self.fragments:
-                frag.update()
-            if all(f.alpha <= 0 for f in self.fragments):
-                self.phase = self.PHASE_FADE
+        if self.phase == self.PHASE_BLACKOUT:
+            if self.timer >= self.BLACKOUT_DURATION:
+                self.phase = self.PHASE_BREAK
                 self.timer = 0
 
-        elif self.phase == self.PHASE_FADE:
-            self.fade_alpha = min(255, self.fade_alpha + 5)
-            if self.fade_alpha >= 255:
-                self.phase = self.PHASE_TEXT
+        elif self.phase == self.PHASE_BREAK:
+            if self.timer >= self.BREAK_DURATION:
+                self._spawn_shards()
+                self.phase = self.PHASE_SHATTER
                 self.timer = 0
 
-        elif self.phase == self.PHASE_TEXT:
-            if self.timer >= 3000:
+        elif self.phase == self.PHASE_SHATTER:
+            for shard in self.shards:
+                shard.update()
+            if self.timer >= self.SHATTER_FADE_DURATION:
+                self.phase = self.PHASE_GAMEOVER
+                self.timer = 0
+
+        elif self.phase == self.PHASE_GAMEOVER:
+            t = min(1.0, self.timer / self.GAMEOVER_FADE_DURATION)
+            self.gameover_alpha = t * 255
+            if self.timer >= self.GAMEOVER_HOLD_DURATION:
                 Game().running = False
 
     def render(self, battle: Battle, surface: pygame.Surface) -> None:
-        if self.phase == self.PHASE_SHATTER:
-            for frag in self.fragments:
-                frag.render(surface)
+        # Black background for all phases
+        surface.blit(self.black_surface, (0, 0))
 
-        if self.phase in (self.PHASE_FADE, self.PHASE_TEXT):
-            if self.fade_surface is None:
-                self.fade_surface = pygame.Surface(surface.get_size())
-                self.fade_surface.fill((0, 0, 0))
-            self.fade_surface.set_alpha(int(self.fade_alpha))
-            surface.blit(self.fade_surface, (0, 0))
+        if self.phase == self.PHASE_BLACKOUT:
+            # Just the soul heart, centered
+            player_object = Game().battle.player_object
+            player_object.sprite.set_alpha(255)
+            rotated = pygame.transform.rotate(
+                player_object.sprite, player_object.rotation
+            )
+            rect = rotated.get_rect(center=self.soul_center)
+            surface.blit(rotated, rect)
 
-        if self.phase == self.PHASE_TEXT:
-            cx = surface.get_width() // 2
-            cy = surface.get_height() // 2
-            draw_text(surface, "GAME OVER", 40, (255, 0, 0), cx, cy, anchor="center")
+        elif self.phase == self.PHASE_BREAK:
+            surface.blit(self.break_sprite, self.break_pos)
+
+        elif self.phase == self.PHASE_SHATTER:
+            for shard in self.shards:
+                shard.render(surface)
+
+        if self.phase == self.PHASE_GAMEOVER:
+            go_surf = self.gameover_sprite.copy()
+            go_surf.set_alpha(int(self.gameover_alpha))
+            go_x = (WIDTH - self.gameover_sprite.get_width()) // 2
+            go_y = (HEIGHT - self.gameover_sprite.get_height()) // 2 - 30
+            surface.blit(go_surf, (go_x, go_y))
 
     def show_soul(self) -> bool:
         return False

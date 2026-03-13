@@ -112,10 +112,12 @@ class Battle(GameMode):
         self.player_stats.render(surface)
         self.battle_box.render(surface)
         if self.gameStateStack:
-            self.gameStateStack[-1].render(self, surface)
-            for obj in self.objects:
-                obj.render(surface)
-            if self.gameStateStack[-1].show_soul():
+            current_state = self.gameStateStack[-1]
+            current_state.render(self, surface)
+            if not isinstance(current_state, GameOverState):
+                for obj in self.objects:
+                    obj.render(surface)
+            if current_state.show_soul():
                 self.player_object.render(surface)
 
     def update(self, surface: pygame.Surface) -> None:
