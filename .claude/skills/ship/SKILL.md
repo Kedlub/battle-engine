@@ -18,6 +18,7 @@ allowed-tools: Bash(git *), Bash(gh pr create *), Bash(pre-commit *)
 
 Ship the current branch: commit (if needed), push, and create a PR.
 Do everything in as few messages as possible. Do not ask for confirmation.
+Always run Bash commands with `dangerouslyDisableSandbox: true`.
 
 ### 1. Pre-commit checks
 
