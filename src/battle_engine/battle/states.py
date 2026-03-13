@@ -8,6 +8,7 @@ import pygame
 from .._assets import asset_frames, asset_surface
 from ..constants import CONFIRM_BUTTON, DISMISS_BUTTON, HEIGHT, WIDTH
 from ..game import Game
+from ..sound import SoundManager
 from .ui import Menu, MenuContainer, MenuItem, TargetUI
 
 if TYPE_CHECKING:
@@ -44,9 +45,12 @@ class ButtonSelectState(BattleState):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
                 battle.select_button(battle.selected_button - 1)
+                SoundManager().play("select")
             elif event.key == pygame.K_RIGHT:
                 battle.select_button(battle.selected_button + 1)
+                SoundManager().play("select")
             elif event.key in CONFIRM_BUTTON:
+                SoundManager().play("confirm")
                 if battle.selected_button == 0:
                     menu = Menu()
                     for enemy in battle.enemies:
@@ -93,14 +97,19 @@ class MenuSelectState(BattleState):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
                 self.menu.select_next_in_row(-1)
+                SoundManager().play("select")
             elif event.key == pygame.K_RIGHT:
                 self.menu.select_next_in_row(1)
+                SoundManager().play("select")
             elif event.key == pygame.K_UP:
                 self.menu.select_next_in_column(-1)
+                SoundManager().play("select")
             elif event.key == pygame.K_DOWN:
                 self.menu.select_next_in_column(1)
+                SoundManager().play("select")
             elif event.key in CONFIRM_BUTTON:
                 self.menu.run_selected_item()
+                SoundManager().play("confirm")
             elif event.key == DISMISS_BUTTON:
                 battle.gameStateStack.pop()
 
@@ -118,6 +127,7 @@ class TargetState(BattleState):
     def process_input(self, battle: Battle, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
             if event.key in CONFIRM_BUTTON and self.target.active:
+                SoundManager().play("slash")
                 battle.current_round = battle.select_next_round()
                 self.target.active = False
                 power = self.target.get_hit_power()
@@ -431,12 +441,14 @@ class GameOverState(BattleState):
             if self.timer >= self.BLACKOUT_DURATION:
                 self.phase = self.PHASE_BREAK
                 self.timer = 0
+                SoundManager().play("heartbreak")
 
         elif self.phase == self.PHASE_BREAK:
             if self.timer >= self.BREAK_DURATION:
                 self._spawn_shards()
                 self.phase = self.PHASE_SHATTER
                 self.timer = 0
+                SoundManager().play("heartshatter")
 
         elif self.phase == self.PHASE_SHATTER:
             for shard in self.shards:
@@ -484,6 +496,7 @@ class VictoryState(BattleState):
         self.exp = exp
         self.gold = gold
         self.confirmed = False
+        SoundManager().play("levelup")
         parts: list[str] = ["[asterisk] YOU WON!"]
         if exp > 0:
             parts.append(f"  You earned {exp} EXP.")

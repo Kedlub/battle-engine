@@ -1,3 +1,5 @@
+import random
+
 import pygame
 
 from .fonts import draw_text, draw_text_size
@@ -35,6 +37,7 @@ class ProgressiveText:
         x: int = 0,
         y: int = 0,
         tick_length: int = 2,
+        blip_sound: str | None = "txt_default",
     ) -> None:
         self.target_text = target_text
         self.current_text: str = ""
@@ -53,6 +56,9 @@ class ProgressiveText:
         self.asterisk: bool = False
         self.target_command_positions: dict[int, list[str]] = {}
         self.target_text_clean: str = ""
+        self._blip_sound_default: str | None = blip_sound
+        self.blip_sound: str | None = blip_sound
+        self._blip_channel: pygame.mixer.Channel | None = None
         self.set_text(target_text)
 
     def preprocess_target_text(
@@ -90,8 +96,27 @@ class ProgressiveText:
             self.finished = False
             self.tick += 1
             if self.tick >= self.tick_length or self.instant_command:
-                self.current_text += self.target_text_clean[len(self.current_text)]
+                pos = len(self.current_text)
+                char = self.target_text_clean[pos]
+                self.current_text += char
                 self.tick = 0
+
+                # Process sound commands at this position
+                cmd_list = self.target_command_positions.get(pos)
+                if cmd_list:
+                    for cmd in cmd_list:
+                        if cmd.startswith("sound:"):
+                            value = cmd.split(":", 1)[1]
+                            self.blip_sound = None if value == "none" else value
+
+                # Play blip on a dedicated channel so each new blip
+                # cuts off the previous one (matches Undertale behavior)
+                if self.blip_sound and not self.instant_command and not char.isspace():
+                    from .sound import SoundManager
+
+                    if self._blip_channel is None:
+                        self._blip_channel = pygame.mixer.find_channel()
+                    SoundManager().play(self.blip_sound, channel=self._blip_channel)
         elif not self.finished:
             self.finished = True
 
@@ -117,6 +142,8 @@ class ProgressiveText:
                         current_font_name = value
                     elif key == "charspacing" and value is not None:
                         current_char_spacing = int(value)
+                    elif key == "sound":
+                        pass  # handled in update()
 
             if char == "\n":
                 line_height = draw_text_size(
@@ -174,6 +201,11 @@ class ProgressiveText:
     def set_text(self, text: str) -> None:
         self.target_text = text
         self.current_text = ""
+
+        # Reset blip sound from configured default, then resolve sentinel
+        self.blip_sound = self._blip_sound_default
+        if self.blip_sound == "txt_default":
+            self.blip_sound = random.choice(["txt_default1", "txt_default2"])
 
         if "[instant]" in self.target_text:
             self.instant_command = True

@@ -57,6 +57,9 @@ class Enemy:
     def update(self, surface: pygame.Surface) -> None:
         if self.being_attacked:
             if not self.hit_visual.active and not self.shake_ticks:
+                from ..sound import SoundManager
+
+                SoundManager().play("hit")
                 power_ratio = min(self.hit_power / float(self.max_health), 1.0)
                 self.shake_dist = int(power_ratio * (self.sprite.get_width() / 2))
                 self.shake_speed = max(1, int(20 * power_ratio))
